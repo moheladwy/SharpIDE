@@ -49,7 +49,7 @@
 		_solutionFilePath = solutionFilePath;
 
 		await BuildService.BuildSolutionAsync(_solutionFilePath);
-		var solutionModel = await RoslynTest.Analyse(_solutionFilePath);
+		var solutionModel = await VsPersistenceMapper.GetSolutionModel(_solutionFilePath);
 		_solutionModel = solutionModel;
 	}
 }

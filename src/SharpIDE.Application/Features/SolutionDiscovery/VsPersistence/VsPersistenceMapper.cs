@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
-public class VsPersistenceMapper
+public static class VsPersistenceMapper
 {
 	public static async Task<SharpIdeSolutionModel> GetSolutionModel(string solutionFilePath, CancellationToken cancellationToken = default)
 	{
@@ -40,7 +40,7 @@ public class VsPersistenceMapper
 			Projects = folderModel.Projects.Select(GetSharpIdeProjectModel).ToList()
 		};
 
-	public static async Task<IntermediateSolutionModel> GetIntermediateModel(string solutionFilePath,
+	private static async Task<IntermediateSolutionModel> GetIntermediateModel(string solutionFilePath,
 		CancellationToken cancellationToken = default)
 	{
 		var serializer = SolutionSerializers.GetSerializerByMoniker(solutionFilePath);
