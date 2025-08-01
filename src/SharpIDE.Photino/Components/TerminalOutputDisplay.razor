@@ -30,10 +30,20 @@
 	protected override async Task OnInitializedAsync()
 	{
 		BuildService.BuildStarted += ClearPreviousOutput;
-		await foreach (var logLine in BuildService.BuildTextWriter.ConsoleChannel.Reader.ReadAllAsync())
+		_ = Task.Run(async () =>
 		{
-			await _terminalRef.Write(logLine);
-		}
+			try
+			{
+				await foreach (var logLine in BuildService.BuildTextWriter.ConsoleChannel.Reader.ReadAllAsync())
+				{
+					await _terminalRef.Write(logLine);
+				}
+			}
+			catch (Exception e)
+			{
+				await DispatchExceptionAsync(e);
+			}
+		});
 	}
 
 	private async Task ClearPreviousOutput()
