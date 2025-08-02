@@ -17,6 +17,9 @@
 	[CascadingParameter]
     public IMudDialogInstance MudDialog { get; set; } = null!;
 
+	[Parameter]
+    public bool AutoOpenLastSolution { get; set; }
+
 	private string? _solutionFilePath;
 
 	protected override void OnInitialized()
@@ -28,7 +31,7 @@
 	{
 		if (firstRender)
 		{
-			if (AppState.IdeSettings.AutoOpenLastSolution && !string.IsNullOrWhiteSpace(_solutionFilePath))
+			if (AutoOpenLastSolution && !string.IsNullOrWhiteSpace(_solutionFilePath))
 			{
 				MudDialog.Close(_solutionFilePath);
 			}

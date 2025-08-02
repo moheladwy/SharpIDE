@@ -14,7 +14,7 @@
 			<MudButton OnClick="@DrawerToggle" Style="min-width: 20px;">
 				<MudIcon Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit"/>
 			</MudButton>
-			<MudButton Style="min-width: 20px;">
+			<MudButton OnClick="@LoadSolutionFromInteractivePicker" Style="min-width: 20px;">
 				<MudIcon Icon="@Icons.Material.Filled.FolderOpen" Color="Color.Inherit"/>
 			</MudButton>
 			<MudButtonGroup OverrideStyles="false">
@@ -77,15 +77,7 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		var dialogRef = await DialogService.ShowAsync<SolutionPickerDialog>("Open Solution", new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Medium, BackdropClick = false });
-		var result = await dialogRef.Result;
-		if (result is null) throw new InvalidOperationException("Dialog result is null");
-		if (result.Canceled) throw new OperationCanceledException("Dialog was canceled");
-		var solutionFilePath = (string)result.Data!;
-		_solutionFilePath = solutionFilePath;
-
-		var solutionModel = await VsPersistenceMapper.GetSolutionModel(_solutionFilePath);
-		_solutionModel = solutionModel;
+		await LoadSolutionFromInteractivePicker(AppState.IdeSettings.AutoOpenLastSolution);
 		if (AppState.IdeSettings.AutoOpenTerminalOnLaunch)
 		{
 			_ = Task.Run(async () =>
@@ -96,6 +88,20 @@
 				await InvokeAsync(StateHasChanged).ConfigureAwait(false);
 			}).ConfigureAwait(false);
 		}
+	}
+
+	private async Task LoadSolutionFromInteractivePicker() => await LoadSolutionFromInteractivePicker(false);
+	private async Task LoadSolutionFromInteractivePicker(bool autoOpenLastSolution)
+	{
+		var dialogRef = await DialogService.ShowAsync<SolutionPickerDialog>("Open Solution",new DialogParameters { [nameof(SolutionPickerDialog.AutoOpenLastSolution)] = autoOpenLastSolution }, new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Medium, BackdropClick = false });
+		var result = await dialogRef.Result;
+		if (result is null) throw new InvalidOperationException("Dialog result is null");
+		if (result.Canceled) throw new OperationCanceledException("Dialog was canceled");
+		var solutionFilePath = (string)result.Data!;
+		_solutionFilePath = solutionFilePath;
+
+		var solutionModel = await VsPersistenceMapper.GetSolutionModel(_solutionFilePath);
+		_solutionModel = solutionModel;
 	}
 
 	private CancellationTokenSource? _cancellationTokenSource = null!;
