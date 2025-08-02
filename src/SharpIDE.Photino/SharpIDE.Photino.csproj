@@ -7,9 +7,10 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
-		<PublishSingleFile>true</PublishSingleFile>
-		<SelfContained>false</SelfContained>
-		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+<!--		<PublishSingleFile>true</PublishSingleFile>--> <!-- Not possible to publish as single file easily because of MSBuild https://github.com/Buildalyzer/Buildalyzer/issues/224 -->
+<!--		<SelfContained>false</SelfContained>-->
+<!--		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>-->
+<!--		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract> &lt;!&ndash; Don't use, leaving so I remember it exists &ndash;&gt;-->
 	</PropertyGroup>
 
 	<ItemGroup>
