@@ -15,40 +15,35 @@ public static class IntermediateMapper
 
 		var rootFolders = vsSolution.SolutionFolders
 			.Where(f => f.Parent is null)
-			.Select(f => BuildFolderTree(f, solutionFilePath, vsSolution.SolutionFolders, vsSolution.SolutionProjects))
+			.Select(f => GetSlnFolderModel(f, solutionFilePath, vsSolution.SolutionFolders, vsSolution.SolutionProjects))
+			.ToList();
+
+		var rootProjects = vsSolution.SolutionProjects
+			.Where(p => p.Parent is null)
+			.Select(s => s.GetProjectModel(solutionFilePath))
 			.ToList();
 
 		var solutionModel = new IntermediateSolutionModel
 		{
 			Name = Path.GetFileName(solutionFilePath),
 			FilePath = solutionFilePath,
-			Projects = vsSolution.SolutionProjects.Where(p => p.Parent is null).Select(s => new IntermediateProjectModel
-			{
-				Model = s,
-				Id = s.Id,
-				FullFilePath = new DirectoryInfo(Path.Join(Path.GetDirectoryName(solutionFilePath), s.FilePath)).FullName
-			}).ToList(),
+			Projects = rootProjects,
 			SolutionFolders = rootFolders
 		};
 		return solutionModel;
 	}
 
-	private static IntermediateSlnFolderModel BuildFolderTree(SolutionFolderModel folder, string solutionFilePath,
+	private static IntermediateSlnFolderModel GetSlnFolderModel(SolutionFolderModel folder, string solutionFilePath,
 		IReadOnlyList<SolutionFolderModel> allSolutionFolders, IReadOnlyList<SolutionProjectModel> allSolutionProjects)
 	{
 		var childFolders = allSolutionFolders
 			.Where(f => f.Parent == folder)
-			.Select(f => BuildFolderTree(f, solutionFilePath, allSolutionFolders, allSolutionProjects))
+			.Select(f => GetSlnFolderModel(f, solutionFilePath, allSolutionFolders, allSolutionProjects))
 			.ToList();
 
 		var projectsInFolder = allSolutionProjects
 			.Where(p => p.Parent == folder)
-			.Select(s => new IntermediateProjectModel
-			{
-				Model = s,
-				Id = s.Id,
-				FullFilePath = new DirectoryInfo(Path.Join(Path.GetDirectoryName(solutionFilePath), s.FilePath)).FullName
-			})
+			.Select(s => s.GetProjectModel(solutionFilePath))
 			.ToList();
 
 		var filesInFolder = folder.Files?
@@ -65,6 +60,16 @@ public static class IntermediateMapper
 			Folders = childFolders,
 			Projects = projectsInFolder,
 			Files = filesInFolder
+		};
+	}
+
+	private static IntermediateProjectModel GetProjectModel(this SolutionProjectModel project, string solutionFilePath)
+	{
+		return new IntermediateProjectModel
+		{
+			Model = project,
+			Id = project.Id,
+			FullFilePath = new DirectoryInfo(Path.Join(Path.GetDirectoryName(solutionFilePath), project.FilePath)).FullName
 		};
 	}
 }
