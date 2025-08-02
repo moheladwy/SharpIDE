@@ -1,10 +1,12 @@
 ﻿@using SharpIDE.Application.Features.Build
 @using SharpIDE.Application.Features.SolutionDiscovery
 @using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence
+@using SharpIDE.Photino.Models
 @inherits LayoutComponentBase
 
 @inject IDialogService DialogService
 @inject BuildService BuildService
+@inject AppState AppState
 
 <MudLayout>
 	<MudAppBar Dense="true">
@@ -82,6 +84,16 @@
 		//await BuildService.BuildSolutionAsync(_solutionFilePath);
 		var solutionModel = await VsPersistenceMapper.GetSolutionModel(_solutionFilePath);
 		_solutionModel = solutionModel;
+		if (AppState.IdeSettings.AutoOpenTerminalOnLaunch)
+		{
+			_ = Task.Run(async () =>
+			{
+				// The mud drawer is a pain, has an initial state, and won't open if you try to open it before it has rendered (presumably using js)
+				await Task.Delay(125).ConfigureAwait(false);
+				_terminalDrawerOpen = true;
+				await InvokeAsync(StateHasChanged).ConfigureAwait(false);
+			}).ConfigureAwait(false);
+		}
 	}
 
 	private async Task BuildSolution() => await MsBuildSolution(BuildType.Build);
