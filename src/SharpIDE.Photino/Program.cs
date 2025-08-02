@@ -31,6 +31,7 @@ public class Program
 			.SetDevToolsEnabled(true)
 			//.SetMaximized(true)
 			.SetLogVerbosity(0)
+			//.SetLocation(new Point(2560, 0)) // This will open the window at the specified location
 			//.SetUseOsDefaultLocation(true) // This will open the window on the same monitor as where the exe is launched from
 			//.SetIconFile("favicon.ico")
 			.SetTitle("SharpIDE.Photino");
