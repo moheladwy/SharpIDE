@@ -1,7 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using System.Diagnostics;
 using Ardalis.GuardClauses;
-using AsyncReadProcess.Common;
 using AsyncReadProcess;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
