@@ -1,0 +1,29 @@
+﻿@using System.Collections.Immutable
+@using Microsoft.CodeAnalysis
+@using SharpIDE.Application.Features.Analysis
+@using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence
+
+@if (_diagnostics.Length is not 0)
+{
+	@ProjectModel.Name
+	@foreach(var diagnostic in _diagnostics)
+	{
+		<div>
+			<strong>@diagnostic.Id</strong>: @diagnostic.GetMessage()
+		</div>
+	}
+}
+
+@code {
+	[Parameter, EditorRequired]
+	public SharpIdeProjectModel ProjectModel { get; set; } = null!;
+
+	private ImmutableArray<Diagnostic> _diagnostics = [];
+
+	protected override async Task OnInitializedAsync()
+	{
+		var diagnostics = await RoslynAnalysis.GetProjectDiagnostics(ProjectModel);
+		_diagnostics = diagnostics;
+	}
+
+}

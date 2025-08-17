@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis.Text;
 using NuGet.Packaging;
+using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.Analysis;
 
@@ -18,6 +19,7 @@ public static class RoslynAnalysis
 	private static MSBuildWorkspace? _workspace;
 	private static HashSet<CodeFixProvider> _codeFixProviders = [];
 	private static HashSet<CodeRefactoringProvider> _codeRefactoringProviders = [];
+	private static TaskCompletionSource _solutionLoadedTcs = new();
 	public static void StartSolutionAnalysis(string solutionFilePath)
 	{
 		_ = Task.Run(async () =>
@@ -46,7 +48,7 @@ public static class RoslynAnalysis
 		var solution = await _workspace.OpenSolutionAsync(solutionFilePath, new Progress());
 		timer.Stop();
 		Console.WriteLine($"RoslynAnalysis: Solution loaded in {timer.ElapsedMilliseconds}ms");
-		Console.WriteLine();
+		_solutionLoadedTcs.SetResult();
 
 		foreach (var assembly in MefHostServices.DefaultAssemblies)
 		{
@@ -108,6 +110,18 @@ public static class RoslynAnalysis
 			// }
 		}
 		Console.WriteLine("RoslynAnalysis: Analysis completed.");
+	}
+
+	public static async Task<ImmutableArray<Diagnostic>> GetProjectDiagnostics(SharpIdeProjectModel projectModel)
+	{
+		await _solutionLoadedTcs.Task;
+		var cancellationToken = CancellationToken.None;
+		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == projectModel.FilePath);
+		var compilation = await project.GetCompilationAsync(cancellationToken);
+		Guard.Against.Null(compilation, nameof(compilation));
+
+		var diagnostics = compilation.GetDiagnostics(cancellationToken);
+		return diagnostics.Where(d => d.Severity is not DiagnosticSeverity.Hidden).ToImmutableArray();
 	}
 
 	public static async Task<ImmutableArray<CodeAction>> GetCodeFixesAsync(Document document, Diagnostic diagnostic)
