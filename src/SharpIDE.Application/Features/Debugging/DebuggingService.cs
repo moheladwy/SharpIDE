@@ -6,13 +6,14 @@ using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using Newtonsoft.Json.Linq;
 using SharpIDE.Application.Features.Debugging.Experimental;
 using SharpIDE.Application.Features.Debugging.Experimental.VsDbg;
+using SharpIDE.Application.Features.SolutionDiscovery;
 
 namespace SharpIDE.Application.Features.Debugging;
 
 public class DebuggingService
 {
 	private DebugProtocolHost _debugProtocolHost = null!;
-	public async Task Attach(int debuggeeProcessId, CancellationToken cancellationToken = default)
+	public async Task Attach(int debuggeeProcessId, Dictionary<SharpIdeFile, List<Breakpoint>> breakpointsByFile, CancellationToken cancellationToken = default)
 	{
 		Guard.Against.NegativeOrZero(debuggeeProcessId, nameof(debuggeeProcessId), "Process ID must be a positive integer.");
 		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
@@ -100,12 +101,16 @@ public class DebuggingService
 		};
 		debugProtocolHost.SendRequestSync(attachRequest);
 
-		// var breakpointRequest = new SetBreakpointsRequest
-		// {
-		// 	Source = new Source { Path = @"C:\Users\Matthew\Documents\Git\BlazorCodeBreaker\src\WebApi\Program.cs" },
-		// 	Breakpoints = [new SourceBreakpoint { Line = 7 }]
-		// };
-		// var breakpointsResponse = debugProtocolHost.SendRequestSync(breakpointRequest);
+		foreach (var breakpoint in breakpointsByFile)
+		{
+			var setBreakpointsRequest = new SetBreakpointsRequest
+			{
+				Source = new Source { Path = breakpoint.Key.Path },
+				Breakpoints = breakpoint.Value.Select(b => new SourceBreakpoint { Line = b.Line }).ToList()
+			};
+			var breakpointsResponse = debugProtocolHost.SendRequestSync(setBreakpointsRequest);
+		}
+
 		new DiagnosticsClient(debuggeeProcessId).ResumeRuntime();
 		var configurationDoneRequest = new ConfigurationDoneRequest();
 		debugProtocolHost.SendRequestSync(configurationDoneRequest);

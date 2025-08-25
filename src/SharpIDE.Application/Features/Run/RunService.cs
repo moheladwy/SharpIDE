@@ -5,6 +5,7 @@ using AsyncReadProcess;
 using SharpIDE.Application.Features.Debugging;
 using SharpIDE.Application.Features.Evaluation;
 using SharpIDE.Application.Features.Events;
+using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.Run;
@@ -12,6 +13,7 @@ namespace SharpIDE.Application.Features.Run;
 public class RunService
 {
 	private readonly ConcurrentDictionary<SharpIdeProjectModel, SemaphoreSlim> _projectLocks = [];
+	public ConcurrentDictionary<SharpIdeFile, List<Breakpoint>> Breakpoints { get; } = [];
 	public async Task RunProject(SharpIdeProjectModel project)
 	{
 		var isDebug = true;
@@ -83,7 +85,7 @@ public class RunService
 			{
 				// Attach debugger (which internally uses a DiagnosticClient to resume startup)
 				var debuggingService = new Debugger { Project = project, ProcessId = process.ProcessId };
-				await debuggingService.Attach(project.RunningCancellationTokenSource.Token).ConfigureAwait(false);
+				await debuggingService.Attach(project.RunningCancellationTokenSource.Token, Breakpoints.ToDictionary()).ConfigureAwait(false);
 			}
 
 			project.Running = true;

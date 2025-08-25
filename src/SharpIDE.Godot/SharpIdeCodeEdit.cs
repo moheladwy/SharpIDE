@@ -4,12 +4,14 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Ardalis.GuardClauses;
 using Godot;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Text;
 using SharpIDE.Application.Features.Analysis;
+using SharpIDE.Application.Features.Debugging;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using Task = System.Threading.Tasks.Task;
 
@@ -34,16 +36,37 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	
 	public override void _Ready()
 	{
+		
 		SyntaxHighlighter = _syntaxHighlighter;
 		_popupMenu = GetNode<PopupMenu>("CodeFixesMenu");
 		_popupMenu.IdPressed += OnCodeFixSelected;
 		CodeCompletionRequested += OnCodeCompletionRequested;
 		CodeFixesRequested += OnCodeFixesRequested;
+		BreakpointToggled += OnBreakpointToggled;
 		CaretChanged += OnCaretChanged;
 		TextChanged += OnTextChanged;
 		SymbolHovered += OnSymbolHovered;
 		SymbolValidate += OnSymbolValidate;
 		SymbolLookup += OnSymbolLookup;
+	}
+
+	private void OnBreakpointToggled(long line)
+	{
+		var lineInt = (int)line;
+		var breakpointAdded = IsLineBreakpointed(lineInt);
+		lineInt++; // Godot is 0-indexed, Debugging is 1-indexed
+		Guard.Against.Negative(lineInt, nameof(lineInt));
+		var breakpoints = Singletons.RunService.Breakpoints.GetOrAdd(_currentFile, []); 
+		if (breakpointAdded)
+		{
+			breakpoints.Add(new Breakpoint { Line = lineInt } );
+		}
+		else
+		{
+			var breakpoint = breakpoints.Single(b => b.Line == lineInt);
+			breakpoints.Remove(breakpoint);
+		}
+		GD.Print($"Breakpoint {(breakpointAdded ? "added" : "removed")} at line {lineInt}");
 	}
 
 	private void OnSymbolLookup(string symbol, long line, long column)
