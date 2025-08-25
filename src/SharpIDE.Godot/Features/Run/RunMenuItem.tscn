@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://btsnapfx0dlbb" path="res://Features/Run/RunMenuItem.cs" id="1_syj0f"]
 [ext_resource type="Texture2D" uid="uid://bkty6563cthj8" path="res://Features/Run/Resources/Run.svg" id="2_hxkig"]
-[ext_resource type="Texture2D" uid="uid://csj1r7s3u10ch" path="res://Features/Run/Resources/Stop.png" id="4_cd138"]
+[ext_resource type="Texture2D" uid="uid://debdmtqgw5dhf" path="res://Features/Run/Resources/Stop.svg" id="3_hxkig"]
 
 [node name="RunMenuItem" type="HBoxContainer"]
 offset_right = 40.0
@@ -26,4 +26,4 @@ icon = ExtResource("2_hxkig")
 visible = false
 layout_mode = 2
 size_flags_vertical = 4
-icon = ExtResource("4_cd138")
+icon = ExtResource("3_hxkig")
