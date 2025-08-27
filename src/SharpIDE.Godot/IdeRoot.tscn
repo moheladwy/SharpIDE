@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://b2oniigcp5ew5"]
+[gd_scene load_steps=9 format=3 uid="uid://b2oniigcp5ew5"]
 
 [ext_resource type="Script" uid="uid://bavypuy7b375x" path="res://IdeRoot.cs" id="1_whawi"]
 [ext_resource type="Texture2D" uid="uid://bkty6563cthj8" path="res://Features/Run/Resources/Run.svg" id="2_8x8ub"]
 [ext_resource type="Script" uid="uid://du2lt7r1p1qfy" path="res://SharpIdeCodeEdit.cs" id="2_qjf5e"]
 [ext_resource type="FontFile" uid="uid://7jc0nj310cu6" path="res://CascadiaCode.ttf" id="2_rk34b"]
 [ext_resource type="Script" uid="uid://bai53k7ongbxw" path="res://Features/SolutionExplorer/SolutionExplorerPanel.cs" id="2_tcy02"]
+[ext_resource type="Script" uid="uid://kvnhndc3l6ih" path="res://Features/CustomControls/InvertedVSplitContainer.cs" id="3_0ybuf"]
 [ext_resource type="PackedScene" uid="uid://bcoytt3bw0gpe" path="res://Features/Run/RunPanel.tscn" id="5_y3aoi"]
 
 [sub_resource type="FontVariation" id="FontVariation_y3aoi"]
@@ -153,7 +154,9 @@ expand_icon = true
 [node name="VSplitContainer" type="VSplitContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-split_offset = 5000
+split_offset = 402
+script = ExtResource("3_0ybuf")
+metadata/_custom_type_script = "uid://kvnhndc3l6ih"
 
 [node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer/HBoxContainer/VSplitContainer"]
 layout_mode = 2
