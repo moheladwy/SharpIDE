@@ -147,9 +147,9 @@ public class RunService
 		await _debugger!.StepOver(threadId);
 	}
 
-	public async Task GetInfoAtStopPoint()
+	public async Task<ThreadsStackTraceModel> GetInfoAtStopPoint()
 	{
-		await _debugger!.GetInfoAtStopPoint();
+		return await _debugger!.GetInfoAtStopPoint();
 	}
 
 	private string GetRunArguments(SharpIdeProjectModel project)

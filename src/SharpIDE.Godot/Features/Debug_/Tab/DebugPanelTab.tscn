@@ -26,6 +26,7 @@ layout_mode = 2
 metadata/_tab_index = 0
 
 [node name="ThreadsVariablesSubTab" parent="TabContainer/Threads & Variables" instance=ExtResource("2_e6ax5")]
+unique_name_in_owner = true
 layout_mode = 1
 
 [node name="Console" type="Control" parent="TabContainer"]

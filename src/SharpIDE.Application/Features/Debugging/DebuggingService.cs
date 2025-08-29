@@ -137,4 +137,44 @@ public class DebuggingService
 		var nextRequest = new NextRequest(threadId);
 		_debugProtocolHost.SendRequestSync(nextRequest);
 	}
+
+	public async Task<ThreadsStackTraceModel> GetInfoAtStopPoint()
+	{
+		var model = new ThreadsStackTraceModel();
+		try
+		{
+			var threads = _debugProtocolHost.SendRequestSync(new ThreadsRequest());
+			foreach (var thread in threads.Threads)
+			{
+				var threadModel = new ThreadModel { Id = thread.Id, Name = thread.Name };
+				model.Threads.Add(threadModel);
+				var stackTrace = _debugProtocolHost.SendRequestSync(new StackTraceRequest { ThreadId = thread.Id });
+				var frame = stackTrace.StackFrames!.FirstOrDefault();
+				if (frame == null) continue;
+				var frameModel = new StackFrameModel
+				{
+					Id = frame.Id,
+					Name = frame.Name,
+					Line = frame.Line,
+					Column = frame.Column,
+					Source = frame.Source?.Path
+				};
+				threadModel.StackFrames.Add(frameModel);
+				var scopes = _debugProtocolHost.SendRequestSync(new ScopesRequest { FrameId = frame.Id });
+				foreach (var scope in scopes.Scopes)
+				{
+					var scopeModel = new ScopeModel { Name = scope.Name };
+					frameModel.Scopes.Add(scopeModel);
+					var variablesResponse = _debugProtocolHost.SendRequestSync(new VariablesRequest { VariablesReference = scope.VariablesReference });
+					scopeModel.Variables = variablesResponse.Variables;
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			throw;
+		}
+
+		return model;
+	}
 }

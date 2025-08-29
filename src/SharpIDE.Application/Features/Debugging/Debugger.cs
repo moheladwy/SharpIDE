@@ -15,4 +15,5 @@ public class Debugger
 	}
 
 	public async Task StepOver(int threadId, CancellationToken cancellationToken = default) => await _debuggingService.StepOver(threadId, cancellationToken);
+	public async Task<ThreadsStackTraceModel> GetInfoAtStopPoint() => await _debuggingService.GetInfoAtStopPoint();
 }

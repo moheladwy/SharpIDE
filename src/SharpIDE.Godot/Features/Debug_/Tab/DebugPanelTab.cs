@@ -1,16 +1,24 @@
 using GDExtensionBindgen;
 using Godot;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
+using SharpIDE.Godot.Features.Debug_.Tab.SubTabs;
 
 namespace SharpIDE.Godot.Features.Debug_.Tab;
 
 public partial class DebugPanelTab : Control
 {
     private Terminal _terminal = null!;
+    private ThreadsVariablesSubTab _threadsVariablesSubTab = null!;
     private Task _writeTask = Task.CompletedTask;
     
     public SharpIdeProjectModel Project { get; set; } = null!;
     public int TabBarTab { get; set; }
+
+    public override void _EnterTree()
+    {
+        _threadsVariablesSubTab = GetNode<ThreadsVariablesSubTab>("%ThreadsVariablesSubTab");
+        _threadsVariablesSubTab.Project = Project;
+    }
 
     public override void _Ready()
     {
