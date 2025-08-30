@@ -58,5 +58,20 @@ public partial class ThreadsVariablesSubTab : Control
 			}
 		});
 		
+		var currentFrame = stoppedThread.StackFrames.First();
+		var variableScenes = currentFrame.Scopes.SelectMany(s => s.Variables).Select(v =>
+		{
+			var variableListItem = _threadListItemScene.Instantiate<Control>();
+			variableListItem.GetNode<Label>("Label").Text = $"{v.Name}";
+			return variableListItem;
+		}).ToList();
+		
+		await this.InvokeAsync(() =>
+		{
+			foreach (var scene in variableScenes)
+			{
+				_variablesVboxContainer.AddChild(scene);
+			}
+		});
 	}
 }

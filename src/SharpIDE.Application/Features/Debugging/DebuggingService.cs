@@ -151,14 +151,16 @@ public class DebuggingService
 				var stackTrace = _debugProtocolHost.SendRequestSync(new StackTraceRequest { ThreadId = thread.Id });
 				var frame = stackTrace.StackFrames!.FirstOrDefault();
 				if (frame == null) continue;
-				// Infrastructure.dll!Infrastructure.DependencyInjection.AddInfrastructure(Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration configuration) Line 23
 				var name = frame.Name;
 				if (name == "[External Code]") continue; // TODO: handle this case
+
+				// Infrastructure.dll!Infrastructure.DependencyInjection.AddInfrastructure(Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.Configuration.IConfiguration configuration) Line 23
 				// need to parse out the class name, method name, namespace, assembly name
 				var methodName = name.Split('!')[1].Split('(')[0];
 				var className = methodName.Split('.').Reverse().Skip(1).First();
 				var namespaceName = string.Join('.', methodName.Split('.').Reverse().Skip(2).Reverse());
 				var assemblyName = name.Split('!')[0];
+				methodName = methodName.Split('.').Reverse().First();
 				var frameModel = new StackFrameModel
 				{
 					Id = frame.Id,
