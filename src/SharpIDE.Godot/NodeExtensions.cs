@@ -40,6 +40,43 @@ public static class NodeExtensions
         {
             var taskCompletionSource = new TaskCompletionSource();
             //WorkerThreadPool.AddTask();
+            Dispatcher.SynchronizationContext.Post(_ =>
+            {
+                try
+                {
+                    workItem();
+                    taskCompletionSource.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    taskCompletionSource.SetException(ex);
+                }
+            }, null);
+            return taskCompletionSource.Task;
+        }
+        
+        public Task InvokeAsync(Func<Task> workItem)
+        {
+            var taskCompletionSource = new TaskCompletionSource();
+            Dispatcher.SynchronizationContext.Post(async void (_) =>
+            {
+                try
+                {
+                    await workItem();
+                    taskCompletionSource.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    taskCompletionSource.SetException(ex);
+                }
+            }, null);
+            return taskCompletionSource.Task;
+        }
+        
+        public Task InvokeDeferredAsync(Action workItem)
+        {
+            var taskCompletionSource = new TaskCompletionSource();
+            //WorkerThreadPool.AddTask();
             Callable.From(() =>
             {
                 try
@@ -55,7 +92,7 @@ public static class NodeExtensions
             return taskCompletionSource.Task;
         }
         
-        public Task InvokeAsync(Func<Task> workItem)
+        public Task InvokeDeferredAsync(Func<Task> workItem)
         {
             var taskCompletionSource = new TaskCompletionSource();
             //WorkerThreadPool.AddTask();
