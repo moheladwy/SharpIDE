@@ -1,29 +1,53 @@
-<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="folder icon">
-  
-
-    <!-- background (transparent) -->
-    <rect width="24" height="24" fill="none"/>
-
-    <!-- folder body (filled) -->
-    <path
-            d="
-      M3.5 7.0
-      H8.7
-      L10.0 8.2
-      H20.5
-      A1.2 1.2 0 0 1 21.7 9.4
-      V17.8
-      A1.2 1.2 0 0 1 20.5 19.0
-      H3.5
-      A1.2 1.2 0 0 1 2.3 17.8
-      V8.2
-      A1.2 1.2 0 0 1 3.5 7.0
-      Z
-    "
-            fill="#4b4d50"
-            stroke="#dfe5e9"
-            stroke-width="0.9"
-            stroke-linejoin="round"
-            filter="url(#glow)"
-    />
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="24"
+   height="24"
+   viewBox="0 0 24 24"
+   role="img"
+   aria-label="folder icon"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="FolderIcon.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="17.191534"
+     inkscape:cx="10.121261"
+     inkscape:cy="11.953558"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <!-- background (transparent) -->
+  <rect
+     width="24"
+     height="24"
+     fill="none"
+     id="rect1" />
+  <!-- folder body (filled) -->
+  <path
+     d="m 5.0012855,5.50003 h 5.1999995 l 1.300001,2.2 h 7.497428 c 0.662742,0 1.2,0.5372583 1.2,1.2 v 8.4 c 0,0.662742 -0.537258,1.2 -1.2,1.2 H 5.0012855 c -0.6627417,0 -1.2,-0.537258 -1.2,-1.2 V 6.6511868 c 0,-0.735197 0.4874158,-1.1571115 1.2,-1.1511568 z"
+     fill="#4b4d50"
+     stroke="#dfe5e9"
+     stroke-width="0.8"
+     stroke-linejoin="round"
+     filter="url(#glow)"
+     id="path1"
+     sodipodi:nodetypes="cccsssssscc"
+     style="stroke-width:0.9;stroke-dasharray:none" />
 </svg>
