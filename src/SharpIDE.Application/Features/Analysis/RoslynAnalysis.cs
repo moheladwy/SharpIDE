@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Ardalis.GuardClauses;
 using Microsoft.CodeAnalysis;
@@ -11,6 +12,7 @@ using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis.Text;
 using NuGet.Packaging;
+using ObservableCollections;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -19,16 +21,17 @@ namespace SharpIDE.Application.Features.Analysis;
 public static class RoslynAnalysis
 {
 	public static MSBuildWorkspace? _workspace;
+	private static SharpIdeSolutionModel? _sharpIdeSolutionModel;
 	private static HashSet<CodeFixProvider> _codeFixProviders = [];
 	private static HashSet<CodeRefactoringProvider> _codeRefactoringProviders = [];
 	private static TaskCompletionSource _solutionLoadedTcs = new();
-	public static void StartSolutionAnalysis(string solutionFilePath)
+	public static void StartSolutionAnalysis(SharpIdeSolutionModel solutionModel)
 	{
 		_ = Task.Run(async () =>
 		{
 			try
 			{
-				await Analyse(solutionFilePath);
+				await Analyse(solutionModel);
 			}
 			catch (Exception e)
 			{
@@ -36,9 +39,10 @@ public static class RoslynAnalysis
 			}
 		});
 	}
-	public static async Task Analyse(string solutionFilePath)
+	public static async Task Analyse(SharpIdeSolutionModel solutionModel)
 	{
 		Console.WriteLine($"RoslynAnalysis: Loading solution");
+		_sharpIdeSolutionModel = solutionModel;
 		var timer = Stopwatch.StartNew();
 		if (_workspace is null)
 		{
@@ -47,7 +51,7 @@ public static class RoslynAnalysis
 			_workspace ??= MSBuildWorkspace.Create(host);
 			_workspace.RegisterWorkspaceFailedHandler(o => throw new InvalidOperationException($"Workspace failed: {o.Diagnostic.Message}"));
 		}
-		var solution = await _workspace.OpenSolutionAsync(solutionFilePath, new Progress());
+		var solution = await _workspace.OpenSolutionAsync(_sharpIdeSolutionModel.FilePath, new Progress());
 		timer.Stop();
 		Console.WriteLine($"RoslynAnalysis: Solution loaded in {timer.ElapsedMilliseconds}ms");
 		_solutionLoadedTcs.SetResult();
@@ -77,20 +81,14 @@ public static class RoslynAnalysis
 		_codeFixProviders = _codeFixProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
 		_codeRefactoringProviders = _codeRefactoringProviders.DistinctBy(s => s.GetType().Name).ToHashSet();
 
+		foreach (var project in _sharpIdeSolutionModel.AllProjects)
+		{
+			var projectDiagnostics = await GetProjectDiagnostics(project);
+			project.Diagnostics.Clear();
+			project.Diagnostics.AddRange(projectDiagnostics);
+		}
 		foreach (var project in solution.Projects)
 		{
-			//Console.WriteLine($"Project: {project.Name}");
-			var compilation = await project.GetCompilationAsync();
-			Guard.Against.Null(compilation, nameof(compilation));
-
-			var diagnostics = compilation.GetDiagnostics();
-			var nonHiddenDiagnostics = diagnostics.Where(d => d.Severity is not DiagnosticSeverity.Hidden).ToList();
-			//
-			foreach (var diagnostic in nonHiddenDiagnostics)
-			{
-				Console.WriteLine(diagnostic);
-				// Optionally run CodeFixProviders here
-			}
 			// foreach (var document in project.Documents)
 			// {
 			// 	var semanticModel = await document.GetSemanticModelAsync();

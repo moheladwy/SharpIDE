@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
-using Microsoft.Build.Evaluation;
+using Microsoft.CodeAnalysis;
+using ObservableCollections;
 using SharpIDE.Application.Features.Evaluation;
+using Project = Microsoft.Build.Evaluation.Project;
 
 namespace SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -110,4 +112,6 @@ public class SharpIdeProjectModel : ISharpIdeNode, IExpandableSharpIdeNode, IChi
 
 	public event Func<Task> ProjectStoppedRunning = () => Task.CompletedTask;
 	public void InvokeProjectStoppedRunning() => ProjectStoppedRunning.Invoke();
+
+	public ObservableHashSet<Diagnostic> Diagnostics { get; internal set; } = [];
 }

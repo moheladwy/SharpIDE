@@ -76,7 +76,7 @@ public partial class IdeRoot : Control
 			_sharpIdeCodeEdit.Solution = solutionModel;
 			_bottomPanelManager.Solution = solutionModel;
 			Callable.From(_solutionExplorerPanel.RepopulateTree).CallDeferred();
-			RoslynAnalysis.StartSolutionAnalysis(path);
+			RoslynAnalysis.StartSolutionAnalysis(solutionModel);
 				
 			var tasks = solutionModel.AllProjects.Select(p => p.MsBuildEvaluationProjectTask).ToList();
 			await Task.WhenAll(tasks).ConfigureAwait(false);
