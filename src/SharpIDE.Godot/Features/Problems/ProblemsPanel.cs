@@ -45,7 +45,7 @@ public partial class ProblemsPanel : Control
             {
                 return new TreeItemContainer();
             });
-            var test = projectDiagnosticsView.ObserveChanged().SubscribeOnCurrentSynchronizationContext()
+            var test = projectDiagnosticsView.ObserveChanged()
                 .SubscribeAwait(async (e, ct) =>
                 {
                     if (e.Action is NotifyCollectionChangedAction.Add)
