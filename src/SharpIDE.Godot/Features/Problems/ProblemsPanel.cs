@@ -38,33 +38,37 @@ public partial class ProblemsPanel : Control
     }
     public void BindToTree(ObservableHashSet<SharpIdeProjectModel> list)
     {
-        var view = list.CreateView(x =>
-        {
-            var treeItem = _tree.CreateItem(_rootItem);
-            treeItem.SetText(0, x.Name);
-            var projectDiagnosticsView = x.Diagnostics.CreateView(y => new TreeItemContainer());
-            projectDiagnosticsView.ObserveChanged()
-                .SubscribeAwait(async (e, ct) => await (e.Action switch
-                {
-                    NotifyCollectionChangedAction.Add => CreateDiagnosticTreeItem(_tree, treeItem, e),
-                    NotifyCollectionChangedAction.Remove => FreeDiagnosticTreeItem(e),
-                    _ => Task.CompletedTask
-                })).AddTo(this);
-            Observable.EveryValueChanged(x, s => s.Diagnostics.Count)
-                .Subscribe(s => treeItem.Visible = s is not 0).AddTo(this);
-            return treeItem;
-        });
-        view.ViewChanged += OnViewChanged;
+        var view = list.CreateView(y => new TreeItemContainer());
+        view.ObserveChanged()
+            .SubscribeAwait(async (e, ct) => await (e.Action switch
+            {
+                NotifyCollectionChangedAction.Add => CreateProjectTreeItem(_tree, _rootItem, e),
+                NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
+                _ => Task.CompletedTask
+            })).AddTo(this);
     }
 
-    private async Task FreeDiagnosticTreeItem(ViewChangedEvent<Diagnostic, TreeItemContainer> e)
+    private async Task CreateProjectTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeProjectModel, TreeItemContainer> e)
     {
         await this.InvokeAsync(() =>
         {
-            e.OldItem.View.Value?.Free();
+            var treeItem = tree.CreateItem(parent);
+            treeItem.SetText(0, e.NewItem.Value.Name);
+            e.NewItem.View.Value = treeItem;
+            
+            Observable.EveryValueChanged(e.NewItem.Value, s => s.Diagnostics.Count).Subscribe(s => treeItem.Visible = s is not 0).AddTo(this);
+            
+            var projectDiagnosticsView = e.NewItem.Value.Diagnostics.CreateView(y => new TreeItemContainer());
+            projectDiagnosticsView.ObserveChanged()
+                .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
+                {
+                    NotifyCollectionChangedAction.Add => CreateDiagnosticTreeItem(_tree, treeItem, innerEvent),
+                    NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
+                    _ => Task.CompletedTask
+                })).AddTo(this);
         });
     }
-
+    
     private async Task CreateDiagnosticTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<Diagnostic, TreeItemContainer> e)
     {
         await this.InvokeAsync(() =>
@@ -74,14 +78,12 @@ public partial class ProblemsPanel : Control
             e.NewItem.View.Value = diagItem;
         });
     }
-
-    private static void OnViewChanged(in SynchronizedViewChangedEventArgs<SharpIdeProjectModel, TreeItem> eventArgs)
+    
+    private async Task FreeTreeItem(TreeItem? treeItem)
     {
-        GD.Print("View changed: " + eventArgs.Action);
-        if (eventArgs.Action == NotifyCollectionChangedAction.Remove)
+        await this.InvokeAsync(() =>
         {
-            var treeItem = eventArgs.OldItem.View;
-            Callable.From(() => treeItem.Free()).CallDeferred();
-        }
+            treeItem?.Free();
+        });
     }
 }
