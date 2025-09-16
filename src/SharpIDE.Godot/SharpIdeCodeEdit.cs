@@ -162,6 +162,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		});
 	}
 
+	// TODO: Ensure not running on UI thread
 	public async Task SetSharpIdeFile(SharpIdeFile file)
 	{
 		_currentFile = file;
@@ -169,11 +170,12 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		_fileChangingSuppressBreakpointToggleEvent = true;
 		SetText(fileContents);
 		_fileChangingSuppressBreakpointToggleEvent = false;
-		var syntaxHighlighting = await RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
-		var razorSyntaxHighlighting = await RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
-		SetSyntaxHighlightingModel(syntaxHighlighting, razorSyntaxHighlighting);
-		var diagnostics = await RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
-		SetDiagnosticsModel(diagnostics);
+		var syntaxHighlighting = RoslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
+		var razorSyntaxHighlighting = RoslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
+		var diagnostics = RoslynAnalysis.GetDocumentDiagnostics(_currentFile);
+		await Task.WhenAll(syntaxHighlighting, razorSyntaxHighlighting);
+		SetSyntaxHighlightingModel(await syntaxHighlighting, await razorSyntaxHighlighting);
+		SetDiagnosticsModel(await diagnostics);
 	}
 	
 	public void UnderlineRange(int line, int caretStartCol, int caretEndCol, Color color, float thickness = 1.5f)

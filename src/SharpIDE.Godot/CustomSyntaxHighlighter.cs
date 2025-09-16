@@ -139,6 +139,7 @@ public partial class CustomHighlighter : SyntaxHighlighter
             "method name" => new Color("dcdcaa"),
             "extension method name" => new Color("dcdcaa"),
             "property name" => new Color("dcdcdc"),
+            "field name" => new Color("dcdcdc"),
             "static symbol" => new Color("dcdcaa"),
             "parameter name" => new Color("9cdcfe"),
             "local name" => new Color("9cdcfe"),
@@ -150,7 +151,7 @@ public partial class CustomHighlighter : SyntaxHighlighter
             // Misc
             "excluded code" => new Color("a9a9a9"),
 
-            _ => new Color("dcdcdc")
+            _ => new Color("f27718") // orange, warning color for unhandled classifications
         };
     }
 }

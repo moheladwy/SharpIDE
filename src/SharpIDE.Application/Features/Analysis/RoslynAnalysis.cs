@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Composition.Hosting;
 using System.Diagnostics;
 using Ardalis.GuardClauses;
 using Microsoft.CodeAnalysis;
@@ -9,6 +10,7 @@ using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.Completion;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.CodeAnalysis.Remote.Razor.ProjectSystem;
 using Microsoft.CodeAnalysis.Text;
 using NuGet.Packaging;
 using SharpIDE.Application.Features.SolutionDiscovery;
@@ -20,6 +22,7 @@ namespace SharpIDE.Application.Features.Analysis;
 public static class RoslynAnalysis
 {
 	public static MSBuildWorkspace? _workspace;
+	private static RemoteSnapshotManager? _snapshotManager;
 	private static SharpIdeSolutionModel? _sharpIdeSolutionModel;
 	private static HashSet<CodeFixProvider> _codeFixProviders = [];
 	private static HashSet<CodeRefactoringProvider> _codeRefactoringProviders = [];
@@ -45,10 +48,18 @@ public static class RoslynAnalysis
 		var timer = Stopwatch.StartNew();
 		if (_workspace is null)
 		{
-			// is this hostServices necessary? test without it - just getting providers from assemblies instead
-			var host = MefHostServices.Create(MefHostServices.DefaultAssemblies);
-			_workspace ??= MSBuildWorkspace.Create(host);
+			var configuration = new ContainerConfiguration()
+				.WithAssemblies(MefHostServices.DefaultAssemblies)
+				.WithAssembly(typeof(RemoteSnapshotManager).Assembly);
+
+			// TODO: dispose container at some point?
+			var container = configuration.CreateContainer();
+
+			var host = MefHostServices.Create(container);
+			_workspace = MSBuildWorkspace.Create(host);
 			_workspace.RegisterWorkspaceFailedHandler(o => throw new InvalidOperationException($"Workspace failed: {o.Diagnostic.Message}"));
+			var snapshotManager = container.GetExports<RemoteSnapshotManager>().FirstOrDefault();
+			_snapshotManager = snapshotManager;
 		}
 		var solution = await _workspace.OpenSolutionAsync(_sharpIdeSolutionModel.FilePath, new Progress());
 		timer.Stop();
@@ -57,7 +68,6 @@ public static class RoslynAnalysis
 
 		foreach (var assembly in MefHostServices.DefaultAssemblies)
 		{
-			//var assembly = analyzer.GetAssembly();
 			var fixers = CodeFixProviderLoader.LoadCodeFixProviders([assembly], LanguageNames.CSharp);
 			_codeFixProviders.AddRange(fixers);
 			var refactoringProviders = CodeRefactoringProviderLoader.LoadCodeRefactoringProviders([assembly], LanguageNames.CSharp);
@@ -137,6 +147,7 @@ public static class RoslynAnalysis
 		var cancellationToken = CancellationToken.None;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
 		var document = project.Documents.SingleOrDefault(s => s.FilePath == fileModel.Path);
+
 		if (document is null) return [];
 		//var document = _workspace!.CurrentSolution.GetDocument(fileModel.Path);
 		Guard.Against.Null(document, nameof(document));
@@ -155,6 +166,7 @@ public static class RoslynAnalysis
 	{
 		await _solutionLoadedTcs.Task;
 		var cancellationToken = CancellationToken.None;
+		var timer = Stopwatch.StartNew();
 		var sharpIdeProjectModel = ((IChildSharpIdeNode) fileModel).GetNearestProjectNode()!;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == sharpIdeProjectModel!.FilePath);
 		if (!fileModel.Name.EndsWith(".razor", StringComparison.OrdinalIgnoreCase))
@@ -162,20 +174,23 @@ public static class RoslynAnalysis
 			return [];
 			//throw new InvalidOperationException("File is not a .razor file");
 		}
-
-		var importsFile = sharpIdeProjectModel.Files.Single(s => s.Name.Equals("_Imports.razor", StringComparison.OrdinalIgnoreCase));
-
 		var razorDocument = project.AdditionalDocuments.Single(s => s.FilePath == fileModel.Path);
-		var importsDocument = project.AdditionalDocuments.Single(s => s.FilePath == importsFile.Path);
+
+		var razorProjectSnapshot = _snapshotManager!.GetSnapshot(project);
+		var documentSnapshot = razorProjectSnapshot.GetDocument(razorDocument);
+
+		var razorCodeDocument = await razorProjectSnapshot.GetRequiredCodeDocumentAsync(documentSnapshot, cancellationToken);
+		var razorCSharpDocument = razorCodeDocument.GetRequiredCSharpDocument();
+		var generatedDocument = await razorProjectSnapshot.GetRequiredGeneratedDocumentAsync(documentSnapshot, cancellationToken);
+		var generatedDocSyntaxRoot = await generatedDocument.GetSyntaxRootAsync(cancellationToken);
+		//var razorCsharpText = razorCSharpDocument.Text.ToString();
+		//var razorSyntaxRoot = razorCodeDocument.GetRequiredSyntaxRoot();
 
 		var razorText = await razorDocument.GetTextAsync(cancellationToken);
-		var importsText = await importsDocument.GetTextAsync(cancellationToken);
-		var (razorSpans, razorGeneratedSourceText, sourceMappings) = RazorAccessors.GetClassifiedSpans(razorText, importsText, razorDocument.FilePath!, Path.GetDirectoryName(project.FilePath!)!);
 
-		var razorGeneratedDocument = project.AddDocument(fileModel.Name + ".g.cs", razorGeneratedSourceText);
-		var razorSyntaxTree = await razorGeneratedDocument.GetSyntaxTreeAsync(cancellationToken);
-		var razorSyntaxRoot = await razorSyntaxTree!.GetRootAsync(cancellationToken);
-		var classifiedSpans = await Classifier.GetClassifiedSpansAsync(razorGeneratedDocument, razorSyntaxRoot.FullSpan, cancellationToken);
+		var (razorSpans, sourceMappings) = RazorAccessors.GetSpansAndMappingsForRazorCodeDocument(razorCodeDocument, razorCSharpDocument);
+
+		var classifiedSpans = await Classifier.GetClassifiedSpansAsync(generatedDocument, generatedDocSyntaxRoot!.FullSpan, cancellationToken);
 		var roslynMappedSpans = classifiedSpans.Select(s =>
 		{
 			var genSpan = s.TextSpan;
@@ -205,11 +220,13 @@ public static class RoslynAnalysis
 			return null;
 		}).Where(s => s is not null).ToList();
 
-		razorSpans = [..razorSpans.Where(s => s.Kind is not SharpIdeRazorSpanKind.Code), ..roslynMappedSpans
-			.Select(s => new SharpIdeRazorClassifiedSpan(s!.SourceSpanInRazor, SharpIdeRazorSpanKind.Code, s.CsharpClassificationType))
+		razorSpans = [
+			..razorSpans.Where(s => s.Kind is not SharpIdeRazorSpanKind.Code),
+			..roslynMappedSpans.Select(s => new SharpIdeRazorClassifiedSpan(s!.SourceSpanInRazor, SharpIdeRazorSpanKind.Code, s.CsharpClassificationType))
 		];
 		razorSpans = razorSpans.OrderBy(s => s.Span.AbsoluteIndex).ToImmutableArray();
-
+		timer.Stop();
+		Console.WriteLine($"RoslynAnalysis: Razor syntax highlighting for {fileModel.Name} took {timer.ElapsedMilliseconds}ms");
 		return razorSpans;
 	}
 

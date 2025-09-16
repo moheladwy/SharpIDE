@@ -96,7 +96,7 @@ public partial class IdeRoot : Control
 				
 			var infraProject = solutionModel.AllProjects.Single(s => s.Name == "Infrastructure");
 			var diFile = infraProject.Files.Single(s => s.Name == "DependencyInjection.cs");
-			await this.InvokeAsync(async () => await _sharpIdeCodeEdit.SetSharpIdeFile(diFile));
+			await this.InvokeDeferredAsync(async () => await _sharpIdeCodeEdit.SetSharpIdeFile(diFile));
 				
 			//var runnableProject = solutionModel.AllProjects.First(s => s.IsRunnable);
 			//await this.InvokeAsync(() => _runPanel.NewRunStarted(runnableProject));

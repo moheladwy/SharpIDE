@@ -8,6 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <IgnoresAccessChecksTo Include="Microsoft.VisualStudioCode.RazorExtension" />
+    <IgnoresAccessChecksTo Include="Microsoft.CodeAnalysis.Remote.Razor.ProjectSystem" />
+    <IgnoresAccessChecksTo Include="Microsoft.CodeAnalysis.Remote.Razor" />
+    <IgnoresAccessChecksTo Include="Microsoft.CodeAnalysis.Razor.Workspaces" />
+    <IgnoresAccessChecksTo Include="Microsoft.CodeAnalysis.Razor.Compiler" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" PrivateAssets="all" />
     <PackageReference Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" />
     <!-- If any Microsoft.Build.*.dll (Excluding Locator) ends up in the output, it will be prioritised for loading by MSBuild Nodes  -->
@@ -16,9 +24,12 @@
     <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Locator" />
+    <PackageReference Include="IgnoresAccessChecksToGenerator" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" />
+<!--    <PackageReference Include="Microsoft.VisualStudioCode.RazorExtension" />--> <!-- Either this or Microsoft.CodeAnalysis.Remote.Razor supplies RemoteSnapshotManager -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Remote.Razor" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" />
     <PackageReference Include="Microsoft.CodeAnalysis.Features" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" PrivateAssets="all" />

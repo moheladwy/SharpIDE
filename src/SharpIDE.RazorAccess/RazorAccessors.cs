@@ -1,36 +1,54 @@
 ﻿extern alias WorkspaceAlias;
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.Razor.Language;
-using Microsoft.CodeAnalysis.Text;
 using RazorCodeDocumentExtensions = WorkspaceAlias::Microsoft.AspNetCore.Razor.Language.RazorCodeDocumentExtensions;
 
 namespace SharpIDE.RazorAccess;
 
 public static class RazorAccessors
 {
-	public static (ImmutableArray<SharpIdeRazorClassifiedSpan>, SourceText Text, List<SharpIdeRazorSourceMapping>) GetClassifiedSpans(SourceText sourceText, SourceText importsSourceText, string razorDocumentFilePath, string projectDirectory)
+	//private static RazorProjectEngine? _razorProjectEngine;
+
+	public static (ImmutableArray<SharpIdeRazorClassifiedSpan>, List<SharpIdeRazorSourceMapping>) GetSpansAndMappingsForRazorCodeDocument(RazorCodeDocument razorCodeDocument, RazorCSharpDocument razorCSharpDocument)
 	{
-
-		var razorSourceDocument = RazorSourceDocument.Create(sourceText.ToString(), razorDocumentFilePath);
-		var importsRazorSourceDocument = RazorSourceDocument.Create(importsSourceText.ToString(), "_Imports.razor");
-
-		var projectEngine = RazorProjectEngine.Create(RazorConfiguration.Default, RazorProjectFileSystem.Create(projectDirectory),
-			builder => { /* configure features if needed */ });
-
-		//var razorCodeDocument = projectEngine.Process(razorSourceDocument, RazorFileKind.Component, [], []);
-		var razorCodeDocument = projectEngine.ProcessDesignTime(razorSourceDocument, RazorFileKind.Component, [importsRazorSourceDocument], []);
-		var razorCSharpDocument = razorCodeDocument.GetRequiredCSharpDocument();
-		//var generatedSourceText = razorCSharpDocument.Text;
-
-		//var filePath = razorCodeDocument.Source.FilePath.AssumeNotNull();
-		//var razorSourceText = razorCodeDocument.Source.Text;
 		var razorSpans = RazorCodeDocumentExtensions.GetClassifiedSpans(razorCodeDocument);
-
-		//var sharpIdeSpans = MemoryMarshal.Cast<RazorCodeDocumentExtensions.ClassifiedSpan, SharpIdeRazorClassifiedSpan>(razorSpans);
 		var sharpIdeSpans = razorSpans.Select(s => new SharpIdeRazorClassifiedSpan(s.Span.ToSharpIdeSourceSpan(), s.Kind.ToSharpIdeSpanKind())).ToList();
 
-		return (sharpIdeSpans.ToImmutableArray(), razorCSharpDocument.Text, razorCSharpDocument.SourceMappings.Select(s => s.ToSharpIdeSourceMapping()).ToList());
+		var result = (sharpIdeSpans.ToImmutableArray(), razorCSharpDocument.SourceMappings.Select(s => s.ToSharpIdeSourceMapping()).ToList());
+		return result;
 	}
+
+	public static ImmutableArray<RazorCodeDocumentExtensions.ClassifiedSpan> GetClassifiedSpansForRazorCodeDocument(RazorCodeDocument razorCodeDocument)
+	{
+		var razorSpans = RazorCodeDocumentExtensions.GetClassifiedSpans(razorCodeDocument);
+		return razorSpans;
+	}
+
+	// public static (ImmutableArray<SharpIdeRazorClassifiedSpan>, SourceText Text, List<SharpIdeRazorSourceMapping>) GetClassifiedSpans(SourceText sourceText, SourceText importsSourceText, string razorDocumentFilePath, string projectDirectory)
+	// {
+	// 	var razorSourceDocument = RazorSourceDocument.Create(sourceText.ToString(), razorDocumentFilePath);
+	// 	var importsRazorSourceDocument = RazorSourceDocument.Create(importsSourceText.ToString(), "_Imports.razor");
+	//
+	// 	var razorProjectFileSystem = RazorProjectFileSystem.Create(projectDirectory);
+	// 	_razorProjectEngine ??= RazorProjectEngine.Create(RazorConfiguration.Default, razorProjectFileSystem,
+	// 		builder => { /* configure features if needed */ });
+	// 	//var projectItem = razorProjectFileSystem.GetItem(razorDocumentFilePath, RazorFileKind.Component);
+	//
+	// 	//var razorCodeDocument = projectEngine.Process(razorSourceDocument, RazorFileKind.Component, [], []);
+	// 	var razorCodeDocument = _razorProjectEngine.Process(razorSourceDocument, RazorFileKind.Component, [importsRazorSourceDocument], []);
+	// 	var razorCSharpDocument = razorCodeDocument.GetRequiredCSharpDocument();
+	// 	//var generatedSourceText = razorCSharpDocument.Text;
+	//
+	// 	//var filePath = razorCodeDocument.Source.FilePath.AssumeNotNull();
+	// 	//var razorSourceText = razorCodeDocument.Source.Text;
+	// 	var razorSpans = RazorCodeDocumentExtensions.GetClassifiedSpans(razorCodeDocument);
+	//
+	// 	//var sharpIdeSpans = MemoryMarshal.Cast<RazorCodeDocumentExtensions.ClassifiedSpan, SharpIdeRazorClassifiedSpan>(razorSpans);
+	// 	var sharpIdeSpans = razorSpans.Select(s => new SharpIdeRazorClassifiedSpan(s.Span.ToSharpIdeSourceSpan(), s.Kind.ToSharpIdeSpanKind())).ToList();
+	//
+	// 	var result = (sharpIdeSpans.ToImmutableArray(), razorCSharpDocument.Text, razorCSharpDocument.SourceMappings.Select(s => s.ToSharpIdeSourceMapping()).ToList());
+	// 	return result;
+	// }
 
 	// public static bool TryGetMappedSpans(
 	// 	TextSpan span,
@@ -59,14 +77,4 @@ public static class RazorAccessors
 	// 	linePositionSpan = new LinePositionSpan();
 	// 	return false;
 	// }
-
-    // /// <summary>
-    // /// Wrapper to avoid <see cref="MissingMethodException"/>s in the caller during JITing
-    // /// even though the method is not actually called.
-    // /// </summary>
-    // [MethodImpl(MethodImplOptions.NoInlining)]
-    // private static object GetFileKindFromPath(string filePath)
-    // {
-    //     return FileKinds.GetFileKindFromPath(filePath);
-    // }
 }
