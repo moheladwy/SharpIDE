@@ -7,13 +7,12 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Text;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Debugging;
-using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.RazorAccess;
 using Task = System.Threading.Tasks.Task;
 
-namespace SharpIDE.Godot;
+namespace SharpIDE.Godot.Features.CodeEditor;
 
 public partial class SharpIdeCodeEdit : CodeEdit
 {
@@ -33,7 +32,6 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	private ImmutableArray<(FileLinePositionSpan fileSpan, Diagnostic diagnostic)> _diagnostics = [];
 	private ImmutableArray<CodeAction> _currentCodeActionsInPopup = [];
-	private ExecutionStopInfo? _executionStopInfo;
 	private bool _fileChangingSuppressBreakpointToggleEvent;
 	
 	public override void _Ready()
@@ -49,26 +47,6 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		SymbolHovered += OnSymbolHovered;
 		SymbolValidate += OnSymbolValidate;
 		SymbolLookup += OnSymbolLookup;
-		GlobalEvents.DebuggerExecutionStopped += OnDebuggerExecutionStopped;
-	}
-
-	private async Task OnDebuggerExecutionStopped(ExecutionStopInfo executionStopInfo)
-	{
-		Guard.Against.Null(Solution, nameof(Solution));
-		if (executionStopInfo.FilePath != _currentFile.Path)
-		{
-			var file = Solution.AllFiles.Single(s => s.Path == executionStopInfo.FilePath);
-			await GodotGlobalEvents.InvokeFileExternallySelectedAndWait(file);
-		}
-		var lineInt = executionStopInfo.Line - 1; // Debugging is 1-indexed, Godot is 0-indexed
-		Guard.Against.Negative(lineInt, nameof(lineInt));
-		_executionStopInfo = executionStopInfo;
-		
-		await this.InvokeAsync(() =>
-		{
-			SetLineBackgroundColor(lineInt, new Color("665001"));
-			SetLineAsExecuting(lineInt, true);
-		});
 	}
 
 	private void OnBreakpointToggled(long line)
@@ -241,33 +219,18 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	public override void _UnhandledKeyInput(InputEvent @event)
 	{
+		if (HasFocus() is false) return; // every tab is currently listening for this input. Only respond if we have focus. Consider refactoring this _UnhandledKeyInput to CodeEditorPanel
 		if (@event.IsActionPressed(InputStringNames.CodeFixes))
 		{
 			EmitSignalCodeFixesRequested();
 		}
-		else if (@event.IsActionPressed(InputStringNames.StepOver))
-		{
-			SendDebuggerStepOver();
-		}
 	}
 
-	private void SendDebuggerStepOver()
-	{
-		if (_executionStopInfo is null) return;
-		var godotLine = _executionStopInfo.Line - 1;
-		SetLineAsExecuting(godotLine, false);
-		SetLineColour(godotLine);
-		var threadId = _executionStopInfo.ThreadId;
-		_executionStopInfo = null;
-		_ = Task.GodotRun(async () =>
-		{
-			await Singletons.RunService.SendDebuggerStepOver(threadId);
-		});
-	}
+	
 
 	private readonly Color _breakpointLineColor = new Color("3a2323");
 	private readonly Color _executingLineColor = new Color("665001");
-	private void SetLineColour(int line)
+	public void SetLineColour(int line)
 	{
 		var breakpointed = IsLineBreakpointed(line);
 		var executing = IsLineExecuting(line);

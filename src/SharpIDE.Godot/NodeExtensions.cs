@@ -36,9 +36,26 @@ public static class NodeExtensions
 {
     extension(Node node)
     {
+        public Task<T> InvokeAsync<T>(Func<T> workItem)
+        {
+            var taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Dispatcher.SynchronizationContext.Post(_ =>
+            {
+                try
+                {
+                    var result = workItem();
+                    taskCompletionSource.SetResult(result);
+                }
+                catch (Exception ex)
+                {
+                    taskCompletionSource.SetException(ex);
+                }
+            }, null);
+            return taskCompletionSource.Task;
+        }
         public Task InvokeAsync(Action workItem)
         {
-            var taskCompletionSource = new TaskCompletionSource();
+            var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             //WorkerThreadPool.AddTask();
             Dispatcher.SynchronizationContext.Post(_ =>
             {
@@ -57,7 +74,7 @@ public static class NodeExtensions
         
         public Task InvokeAsync(Func<Task> workItem)
         {
-            var taskCompletionSource = new TaskCompletionSource();
+            var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             Dispatcher.SynchronizationContext.Post(async void (_) =>
             {
                 try
@@ -75,7 +92,7 @@ public static class NodeExtensions
         
         public Task InvokeDeferredAsync(Action workItem)
         {
-            var taskCompletionSource = new TaskCompletionSource();
+            var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             //WorkerThreadPool.AddTask();
             Callable.From(() =>
             {
@@ -94,7 +111,7 @@ public static class NodeExtensions
         
         public Task InvokeDeferredAsync(Func<Task> workItem)
         {
-            var taskCompletionSource = new TaskCompletionSource();
+            var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             //WorkerThreadPool.AddTask();
             Callable.From(async void () =>
             {

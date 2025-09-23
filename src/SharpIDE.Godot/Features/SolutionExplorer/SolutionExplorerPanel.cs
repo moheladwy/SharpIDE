@@ -40,7 +40,8 @@ public partial class SolutionExplorerPanel : MarginContainer
 	
 	private async Task OnFileExternallySelected(SharpIdeFile file)
 	{
-		GodotGlobalEvents.InvokeFileSelected(file);
+		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+		var task = GodotGlobalEvents.InvokeFileSelectedAndWait(file);
 		var item = FindItemRecursive(_tree.GetRoot(), file);
 		if (item is not null)
 		{
@@ -52,6 +53,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				_tree.QueueRedraw();
 			});
 		}
+		await task.ConfigureAwait(false);
 	}
 	
 	private static TreeItem? FindItemRecursive(TreeItem item, SharpIdeFile file)

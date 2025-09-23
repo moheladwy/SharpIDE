@@ -68,7 +68,7 @@ public class RunService
 				SingleReader = true,
 				SingleWriter = false,
 			});
-			var logsDrained = new TaskCompletionSource();
+			var logsDrained = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 			_ = Task.Run(async () =>
 			{
 				await foreach(var log in process.CombinedOutputChannel.Reader.ReadAllAsync().ConfigureAwait(false))

@@ -1,4 +1,7 @@
+using Ardalis.GuardClauses;
 using Godot;
+using SharpIDE.Application.Features.Debugging;
+using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
@@ -11,6 +14,7 @@ public partial class CodeEditorPanel : MarginContainer
     public SharpIdeSolutionModel Solution { get; set; } = null!;
     private PackedScene _sharpIdeCodeEditScene = GD.Load<PackedScene>("res://Features/CodeEditor/SharpIdeCodeEdit.tscn");
     private TabContainer _tabContainer = null!;
+	private ExecutionStopInfo? _debuggerExecutionStopInfo;
     
     public override void _Ready()
     {
@@ -20,6 +24,15 @@ public partial class CodeEditorPanel : MarginContainer
         var tabBar = _tabContainer.GetTabBar();
         tabBar.TabCloseDisplayPolicy = TabBar.CloseButtonDisplayPolicy.ShowAlways;
         tabBar.TabClosePressed += OnTabClosePressed;
+		GlobalEvents.DebuggerExecutionStopped += OnDebuggerExecutionStopped;
+    }
+    
+    public override void _UnhandledKeyInput(InputEvent @event)
+    {
+        if (@event.IsActionPressed(InputStringNames.StepOver))
+        {
+            SendDebuggerStepOver();
+        }
     }
 
     private void OnTabClicked(long tab)
@@ -37,7 +50,8 @@ public partial class CodeEditorPanel : MarginContainer
 
     public async Task SetSharpIdeFile(SharpIdeFile file)
     {
-        var existingTab = _tabContainer.GetChildren().OfType<SharpIdeCodeEdit>().FirstOrDefault(t => t.SharpIdeFile == file);
+		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+        var existingTab = await this.InvokeAsync(() => _tabContainer.GetChildren().OfType<SharpIdeCodeEdit>().FirstOrDefault(t => t.SharpIdeFile == file));
         if (existingTab is not null)
         {
             var existingTabIndex = existingTab.GetIndex();
@@ -57,5 +71,43 @@ public partial class CodeEditorPanel : MarginContainer
             _tabContainer.CurrentTab = newTabIndex;
         });
         await newTab.SetSharpIdeFile(file);
+    }
+    
+    private async Task OnDebuggerExecutionStopped(ExecutionStopInfo executionStopInfo)
+    {
+        Guard.Against.Null(Solution, nameof(Solution));
+        
+        var currentSharpIdeFile = await this.InvokeAsync<SharpIdeFile>(() => _tabContainer.GetChild<SharpIdeCodeEdit>(_tabContainer.CurrentTab).SharpIdeFile);
+        
+        if (executionStopInfo.FilePath != currentSharpIdeFile?.Path)
+        {
+            var file = Solution.AllFiles.Single(s => s.Path == executionStopInfo.FilePath);
+            await GodotGlobalEvents.InvokeFileExternallySelectedAndWait(file).ConfigureAwait(false);
+        }
+        var lineInt = executionStopInfo.Line - 1; // Debugging is 1-indexed, Godot is 0-indexed
+        Guard.Against.Negative(lineInt, nameof(lineInt));
+        _debuggerExecutionStopInfo = executionStopInfo;
+        
+        await this.InvokeAsync(() =>
+        {
+            var focusedTab = _tabContainer.GetChild<SharpIdeCodeEdit>(_tabContainer.CurrentTab);
+            focusedTab.SetLineBackgroundColor(lineInt, new Color("665001"));
+            focusedTab.SetLineAsExecuting(lineInt, true);
+        });
+    }
+    
+    private void SendDebuggerStepOver()
+    {
+        if (_debuggerExecutionStopInfo is null) return; // ie not currently stopped
+        var godotLine = _debuggerExecutionStopInfo.Line - 1;
+        var focusedTab = _tabContainer.GetChild<SharpIdeCodeEdit>(_tabContainer.CurrentTab);
+        focusedTab.SetLineAsExecuting(godotLine, false);
+        focusedTab.SetLineColour(godotLine);
+        var threadId = _debuggerExecutionStopInfo.ThreadId;
+        _debuggerExecutionStopInfo = null;
+        _ = Task.GodotRun(async () =>
+        {
+            await Singletons.RunService.SendDebuggerStepOver(threadId);
+        });
     }
 }
