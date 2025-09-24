@@ -10,6 +10,8 @@ public partial class SearchWindow : PopupPanel
     private VBoxContainer _searchResultsContainer = null!;
     public SharpIdeSolutionModel Solution { get; set; } = null!;
 	private readonly PackedScene _searchResultEntryScene = ResourceLoader.Load<PackedScene>("res://Features/Search/SearchResultComponent.tscn");
+
+    private CancellationTokenSource _cancellationTokenSource = new();
     
     public override void _Ready()
     {
@@ -20,21 +22,24 @@ public partial class SearchWindow : PopupPanel
 
     private async void OnTextChanged(string newText)
     {
-        GD.Print("Search text changed");
-        await Task.GodotRun(() => Search(newText));
+        await _cancellationTokenSource.CancelAsync();
+        // TODO: Investigate allocations
+        _cancellationTokenSource = new CancellationTokenSource();
+        var token = _cancellationTokenSource.Token;
+        await Task.GodotRun(() => Search(newText, token));
     }
 
-    private async Task Search(string text)
+    private async Task Search(string text, CancellationToken cancellationToken)
     {
-        var result = await SearchService.FindInFiles(Solution, text);
+        var result = await SearchService.FindInFiles(Solution, text, cancellationToken);
         await this.InvokeAsync(() =>
         {
             _searchResultsContainer.GetChildren().ToList().ForEach(s => s.QueueFree());
             foreach (var searchResult in result)
             {
-                var result = _searchResultEntryScene.Instantiate<SearchResultComponent>();
-                result.Result = searchResult;
-                _searchResultsContainer.AddChild(result);
+                var resultNode = _searchResultEntryScene.Instantiate<SearchResultComponent>();
+                resultNode.Result = searchResult;
+                _searchResultsContainer.AddChild(resultNode);
             }
         });
     }

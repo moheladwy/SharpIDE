@@ -7,7 +7,7 @@ namespace SharpIDE.Application.Features.Search;
 
 public static class SearchService
 {
-	public static async Task<List<SearchResult>> FindInFiles(SharpIdeSolutionModel solutionModel, string searchTerm)
+	public static async Task<List<SearchResult>> FindInFiles(SharpIdeSolutionModel solutionModel, string searchTerm, CancellationToken cancellationToken)
 	{
 		if (searchTerm.Length < 4)
 		{
@@ -17,10 +17,12 @@ public static class SearchService
 		var timer = Stopwatch.StartNew();
 		var files = solutionModel.AllFiles;
 		ConcurrentBag<SearchResult> results = [];
-		await Parallel.ForEachAsync(files, async (file, ct) =>
+		await Parallel.ForEachAsync(files, cancellationToken, async (file, ct) =>
 			{
+				if (cancellationToken.IsCancellationRequested) return;
 				await foreach (var (index, line) in File.ReadLinesAsync(file.Path, ct).Index().WithCancellation(ct))
 				{
+					if (cancellationToken.IsCancellationRequested) return;
 					if (line.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
 					{
 						results.Add(new SearchResult
@@ -32,9 +34,9 @@ public static class SearchService
 					}
 				}
 			}
-		);
+		).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 		timer.Stop();
-		Console.WriteLine($"Search completed in {timer.ElapsedMilliseconds} ms. Found {results.Count} results.");
+		Console.WriteLine($"Search completed in {timer.ElapsedMilliseconds} ms. Found {results.Count} results. {(cancellationToken.IsCancellationRequested ? "(Cancelled)" : "")}");
 		return results.ToList();
 	}
 }
