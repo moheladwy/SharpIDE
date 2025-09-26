@@ -33,3 +33,183 @@ text = "IDE Diagnostics"
 
 [node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
 layout_mode = 2
+
+[node name="GraphEdit" type="GraphEdit" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+connections = Array[Dictionary]([{
+"from_node": &"GraphNode",
+"from_port": 0,
+"keep_alive": true,
+"to_node": &"GraphNode6",
+"to_port": 0
+}, {
+"from_node": &"GraphNode",
+"from_port": 0,
+"keep_alive": true,
+"to_node": &"GraphNode2",
+"to_port": 0
+}, {
+"from_node": &"GraphNode2",
+"from_port": 0,
+"keep_alive": true,
+"to_node": &"GraphNode3",
+"to_port": 0
+}, {
+"from_node": &"GraphNode3",
+"from_port": 0,
+"keep_alive": true,
+"to_node": &"GraphNode4",
+"to_port": 0
+}, {
+"from_node": &"GraphNode3",
+"from_port": 0,
+"keep_alive": true,
+"to_node": &"GraphNode5",
+"to_port": 0
+}])
+
+[node name="GraphNode" type="GraphNode" parent="VBoxContainer/GraphEdit"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 75.0
+offset_right = 171.0
+offset_bottom = 179.0
+mouse_filter = 1
+position_offset = Vector2(25, 75)
+title = "Read Solution File"
+slot/0/left_enabled = false
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/GraphNode"]
+layout_mode = 2
+text = "Read File
+Map to Model"
+
+[node name="GraphNode2" type="GraphNode" parent="VBoxContainer/GraphEdit"]
+layout_mode = 0
+offset_left = 222.0
+offset_top = 75.0
+offset_right = 448.0
+offset_bottom = 179.0
+mouse_filter = 1
+position_offset = Vector2(222, 75)
+title = "Create MSBuildWorkspace"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/GraphNode2"]
+layout_mode = 2
+text = "Create CompositionHost
+Create Workspace"
+
+[node name="GraphNode3" type="GraphNode" parent="VBoxContainer/GraphEdit"]
+layout_mode = 0
+offset_left = 492.0
+offset_top = 87.0
+offset_right = 704.0
+offset_bottom = 165.0
+mouse_filter = 1
+position_offset = Vector2(492, 87)
+title = "Workspace: Load Solution"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/GraphNode3"]
+layout_mode = 2
+text = "OpenSolutionAsync"
+
+[node name="GraphNode4" type="GraphNode" parent="VBoxContainer/GraphEdit"]
+layout_mode = 0
+offset_left = 751.0
+offset_top = 73.0
+offset_right = 1013.0
+offset_bottom = 177.0
+mouse_filter = 1
+position_offset = Vector2(751, 73)
+title = "GetProjectDiagnostics"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/GraphNode4"]
+layout_mode = 2
+text = "GetCompilation
+GetDiagnostics"
+
+[node name="GraphNode5" type="GraphNode" parent="VBoxContainer/GraphEdit"]
+layout_mode = 0
+offset_left = 750.0
+offset_top = 199.0
+offset_right = 1040.0
+offset_bottom = 355.0
+mouse_filter = 1
+position_offset = Vector2(750, 199)
+title = "GetDocumentSyntaxHighlighting"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/GraphNode5"]
+layout_mode = 2
+text = "GetSyntaxTreeAsync
+GetRootAsync
+GetClassifiedSpansAsync
+GetMappedLineSpan"
+
+[node name="GraphNode6" type="GraphNode" parent="VBoxContainer/GraphEdit"]
+layout_mode = 0
+offset_left = 228.0
+offset_top = 345.0
+offset_right = 538.0
+offset_bottom = 423.0
+mouse_filter = 1
+position_offset = Vector2(228, 345)
+title = "MS.Build.Evaluation: Project Evaluation"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = false
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="Label" type="Label" parent="VBoxContainer/GraphEdit/GraphNode6"]
+layout_mode = 2
+text = "LoadProject"
