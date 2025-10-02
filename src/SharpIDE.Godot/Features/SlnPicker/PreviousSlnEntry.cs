@@ -3,7 +3,7 @@ using SharpIDE.Godot.Features.IdeSettings;
 
 namespace SharpIDE.Godot.Features.SlnPicker;
 
-public partial class PreviousSlnEntry : HBoxContainer
+public partial class PreviousSlnEntry : MarginContainer
 {
     private Label _slnPathLabel = null!;
     private Label _slnNameLabel = null!;
@@ -16,7 +16,7 @@ public partial class PreviousSlnEntry : HBoxContainer
         if (RecentSln is null) return;
         _slnNameLabel = GetNode<Label>("%SlnNameLabel");
         _slnPathLabel = GetNode<Label>("%SlnPathLabel");
-        _slnColourPanel = GetNode<Panel>("Panel");
+        _slnColourPanel = GetNode<Panel>("%Panel");
         _slnNameLabel.Text = RecentSln.Name;
         _slnPathLabel.Text = RecentSln.FilePath;
         _slnColourPanel.Modulate = RandomRecentSlnColours.GetColourForFilePath(RecentSln.FilePath);

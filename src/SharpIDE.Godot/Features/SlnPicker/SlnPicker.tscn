@@ -61,7 +61,7 @@ layout_mode = 2
 [node name="LineEdit" type="LineEdit" parent="VSplitContainer/Panel/MarginContainer2/VBoxContainer2/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Search Projects"
+placeholder_text = "Search recent projects"
 
 [node name="OpenSlnButton" type="Button" parent="VSplitContainer/Panel/MarginContainer2/VBoxContainer2/HBoxContainer"]
 unique_name_in_owner = true
