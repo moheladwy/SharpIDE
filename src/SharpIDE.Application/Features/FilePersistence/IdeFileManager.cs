@@ -54,6 +54,7 @@ public class IdeFileManager
 	public async Task SaveFileAsync(SharpIdeFile file)
 	{
 		if (!_openFiles.ContainsKey(file)) throw new InvalidOperationException("File is not open in memory.");
+		if (file.IsDirty.Value is false) return;
 
 		var text = await GetFileTextAsync(file);
 		await File.WriteAllTextAsync(file.Path, text);
@@ -75,7 +76,7 @@ public class IdeFileManager
 
 	public async Task SaveAllOpenFilesAsync()
 	{
-		foreach (var file in _openFiles.Keys)
+		foreach (var file in _openFiles.Keys.ToList())
 		{
 			await SaveFileAsync(file);
 		}
