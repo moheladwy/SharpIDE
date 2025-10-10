@@ -14,11 +14,13 @@ file enum ProjectContextMenuOptions
 
 public partial class SolutionExplorerPanel
 {
+    private Texture2D _runIcon = ResourceLoader.Load<Texture2D>("uid://bkty6563cthj8");
     private void OpenContextMenuProject(SharpIdeProjectModel project)
     {
         var menu = new PopupMenu();
         AddChild(menu);
-        menu.AddItem("Run", (int)ProjectContextMenuOptions.Run);
+        menu.AddIconItem(_runIcon, "Run", (int)ProjectContextMenuOptions.Run);
+        menu.SetItemIconMaxWidth((int)ProjectContextMenuOptions.Run, 20);
         menu.AddSeparator();
         menu.AddItem("Build", (int)ProjectContextMenuOptions.Build);
         menu.AddItem("Rebuild", (int)ProjectContextMenuOptions.Rebuild);
