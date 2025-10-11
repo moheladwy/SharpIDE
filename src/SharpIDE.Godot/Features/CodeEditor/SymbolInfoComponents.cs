@@ -17,10 +17,8 @@ public static class SymbolInfoComponents
         label.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         label.PushColor(CachedColors.White);
         label.PushFont(MonospaceFont);
-        label.PushColor(CachedColors.KeywordBlue);
-        // TODO: Attributes
-        label.AddText(methodSymbol.DeclaredAccessibility.GetAccessibilityString());
-        label.Pop();
+        label.AddMethodAttributes(methodSymbol);
+        label.AddAccessibilityModifier(methodSymbol);
         label.AddText(" ");
         label.AddStaticModifier(methodSymbol);
         label.AddVirtualModifier(methodSymbol);
@@ -54,6 +52,13 @@ public static class SymbolInfoComponents
         Accessibility.ProtectedAndInternal => "private protected",
         _ => "unknown"
     };
+
+    private static void AddAccessibilityModifier(this RichTextLabel label, IMethodSymbol methodSymbol)
+    {
+        label.PushColor(CachedColors.KeywordBlue);
+        label.AddText(methodSymbol.DeclaredAccessibility.GetAccessibilityString());
+        label.Pop();
+    }
     
     private static void AddStaticModifier(this RichTextLabel label, IMethodSymbol methodSymbol)
     {
@@ -96,6 +101,16 @@ public static class SymbolInfoComponents
             label.AddText("virtual");
             label.Pop();
             label.AddText(" ");
+        }
+    }
+    
+    private static void AddMethodAttributes(this RichTextLabel label, IMethodSymbol methodSymbol)
+    {
+        var attributes = methodSymbol.GetAttributes();
+        if (attributes.Length is 0) return;
+        foreach (var (index, attribute) in attributes.Index())
+        {
+            label.AddAttribute(attribute, true);
         }
     }
     
@@ -160,14 +175,7 @@ public static class SymbolInfoComponents
             {
                 foreach (var (attrIndex, attribute) in attributes.Index())
                 {
-                    label.AddText("[");
-                    label.PushColor(CachedColors.ClassGreen);
-                    var displayString = attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                    if (displayString?.EndsWith("Attribute") is true) displayString = displayString[..^9]; // remove last 9 chars
-                    label.AddText(displayString ?? "unknown");
-                    label.Pop();
-                    label.AddText("]");
-                    label.AddText(" ");
+                    label.AddAttribute(attribute, false);
                 }
             }
             if (parameterSymbol.RefKind != RefKind.None) // ref, in, out
@@ -295,6 +303,19 @@ public static class SymbolInfoComponents
                 label.Newline();
             }
         }
+    }
+    
+    private static void AddAttribute(this RichTextLabel label, AttributeData attribute, bool newLines)
+    {
+        label.AddText("[");
+        label.PushColor(CachedColors.ClassGreen);
+        var displayString = attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        if (displayString?.EndsWith("Attribute") is true) displayString = displayString[..^9]; // remove last 9 chars
+        label.AddText(displayString ?? "unknown");
+        label.Pop();
+        label.AddText("]");
+        if (newLines) label.Newline();
+        else label.AddText(" ");
     }
 
     // TODO: parse these types better?
