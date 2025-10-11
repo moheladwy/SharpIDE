@@ -258,6 +258,40 @@ public static class SymbolInfoComponents
             }
         }
     }
+
+    // TODO: parse these types better?
+    private static (string, Color) GetForMetadataName(string metadataName)
+    {
+        var typeChar = metadataName[0];
+        var typeColour = typeChar switch
+        {
+            'N' => CachedColors.KeywordBlue,
+            'T' => CachedColors.ClassGreen,
+            'F' => CachedColors.White,
+            'P' => CachedColors.White,
+            'M' => CachedColors.Yellow,
+            'E' => CachedColors.White,
+            _ => CachedColors.Orange
+        };
+        var minimalTypeName = (typeChar, metadataName) switch
+        {
+            // T:Microsoft.Extensions.DependencyInjection.IServiceCollection
+            // M:Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions.ValidateOnStart``1(Microsoft.Extensions.Options.OptionsBuilder{``0})
+            // F:Namespace.TypeName.FieldName
+            // P:Namespace.TypeName.PropertyName
+            // E:Namespace.TypeName.EventName
+            // N:Namespace.Name
+            ('N', _) => metadataName.Split('.').Last(),
+            ('T', _) => metadataName.Split('.').Last(),
+            ('F', _) => metadataName.Split('.').Last(),
+            ('P', _) => metadataName.Split('.').Last(),
+            ('E', _) => metadataName.Split('.').Last(),
+            ('M', var s) when s.Contains('(') => s[(s.Split('(')[0].LastIndexOf('.') + 1)..s.IndexOf('(')],
+            ('M', var s) => s.Split('.').Last(),
+            _ => metadataName
+        };
+        return (minimalTypeName, typeColour);
+    }
     
     private static void AddXmlDocFragment(this RichTextLabel label, string xmlFragment)
     {
@@ -268,25 +302,14 @@ public static class SymbolInfoComponents
             {
                 label.AddText(reader.Value);
             }
-            else if (reader is { NodeType: System.Xml.XmlNodeType.Element, Name: DocumentationCommentXmlNames.SeeElementName })
+            else if (reader is { NodeType: System.Xml.XmlNodeType.Element, Name: DocumentationCommentXmlNames.SeeElementName or DocumentationCommentXmlNames.SeeAlsoElementName })
             {
                 var cref = reader.GetAttribute(DocumentationCommentXmlNames.CrefAttributeName);
                 if (cref is not null)
                 {
-                    var minimalTypeName = cref.Split('.').Last(); // may be suboptimal for anything other than T
-                    var typeColour = cref[0] switch
-                    {
-                        'N' => CachedColors.KeywordBlue,
-                        'T' => CachedColors.ClassGreen,
-                        'F' => CachedColors.White,
-                        'P' => CachedColors.White,
-                        'M' => CachedColors.Yellow,
-                        'E' => CachedColors.White,
-                        _ => CachedColors.Orange
-                    };
+                    var (minimalTypeName, typeColour) = GetForMetadataName(cref);
                     label.PushMeta("TODO", RichTextLabel.MetaUnderline.OnHover);
                         label.PushColor(typeColour);
-                            //label.AddText(cref.TrimStart('!', ':')); // remove !: prefix
                             label.AddText(minimalTypeName);
                         label.Pop();
                     label.Pop(); // meta
@@ -337,7 +360,6 @@ public static class SymbolInfoComponents
         if (docComment.SummaryText is not null)
         {
             label.AddXmlDocFragment(docComment.SummaryText);
-            //label.AddText(docComment.SummaryText);
             label.Newline();
         }
         label.PushTable(2);
@@ -357,7 +379,7 @@ public static class SymbolInfoComponents
                 label.AddText(parameterName);
                 label.Pop();
                 label.AddText(" - ");
-                label.AddText(parameterText);
+                label.AddXmlDocFragment(parameterText);
                 label.Pop(); // cell
                 if (index < docComment.ParameterNames.Length - 1)
                 {
@@ -383,7 +405,7 @@ public static class SymbolInfoComponents
                 label.AddText(typeParameterName);
                 label.Pop();
                 label.AddText(" - ");
-                label.AddText(typeParameterText);
+                label.AddXmlDocFragment(typeParameterText);
                 label.Pop(); // cell
                 if (index < docComment.TypeParameterNames.Length - 1)
                 {
@@ -400,7 +422,7 @@ public static class SymbolInfoComponents
                 label.Pop();
             label.Pop();
             label.PushCell();
-                label.AddText(docComment.ReturnsText);
+                label.AddXmlDocFragment(docComment.ReturnsText);
             label.Pop(); // cell
         }
 
@@ -416,11 +438,11 @@ public static class SymbolInfoComponents
                 var exceptionText = docComment.GetExceptionTexts(exceptionTypeName).FirstOrDefault();
                 if (exceptionText is null) continue;
                 label.PushCell();
-                label.PushColor(CachedColors.InterfaceGreen);
-                label.AddText(exceptionTypeName);
+                label.PushColor(CachedColors.ClassGreen);
+                label.AddText(exceptionTypeName.Split('.').Last());
                 label.Pop();
                 label.AddText(" - ");
-                label.AddText(exceptionText);
+                label.AddXmlDocFragment(exceptionText);
                 label.Pop(); // cell
                 if (index < docComment.ExceptionTypes.Length - 1)
                 {
@@ -438,7 +460,7 @@ public static class SymbolInfoComponents
                 label.Pop();
             label.Pop();
             label.PushCell();
-            label.AddText(docComment.RemarksText);
+            label.AddXmlDocFragment(docComment.RemarksText);
             label.Pop(); // cell
             label.PushCell();
             label.Pop();
