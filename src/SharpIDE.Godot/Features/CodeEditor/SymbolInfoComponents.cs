@@ -23,7 +23,6 @@ public static class SymbolInfoComponents
         label.Pop();
         label.AddText(" ");
         label.AddStaticModifier(methodSymbol);
-        label.AddText(" ");
         label.AddMethodReturnType(methodSymbol);
         label.AddText(" ");
         label.AddMethodName(methodSymbol);
@@ -61,6 +60,7 @@ public static class SymbolInfoComponents
             label.PushColor(CachedColors.KeywordBlue);
             label.AddText("static");
             label.Pop();
+            label.AddText(" ");
         }
     }
     
