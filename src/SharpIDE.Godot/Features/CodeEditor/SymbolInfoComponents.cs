@@ -352,16 +352,17 @@ public static class SymbolInfoComponents
         }, label);
     }
 
+    private static readonly Color HrColour = new Color("4d4d4d");
     private static void AddDocs(this RichTextLabel label, IMethodSymbol methodSymbol)
     {
         var xmlDocs = methodSymbol.GetDocumentationCommentXml();
         if (string.IsNullOrWhiteSpace(xmlDocs)) return;
-        label.AddHr(100, 1, CachedColors.Gray);
+        label.AddHr(100, 1, HrColour);
         label.Newline();
         var docComment = DocumentationComment.FromXmlFragment(xmlDocs);
         if (docComment.SummaryText is not null)
         {
-            label.AddXmlDocFragment(docComment.SummaryText);
+            label.AddXmlDocFragment(docComment.SummaryText.ReplaceLineEndings(" "));
             label.Newline();
         }
         label.PushTable(2);
