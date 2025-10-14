@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Composition.Hosting;
 using System.Diagnostics;
 using Ardalis.GuardClauses;
@@ -19,6 +19,8 @@ using Microsoft.CodeAnalysis.Shared.Utilities;
 using Microsoft.CodeAnalysis.Text;
 using SharpIDE.Application.Features.Analysis.FixLoaders;
 using SharpIDE.Application.Features.Analysis.Razor;
+using SharpIDE.Application.Features.Build;
+using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.RazorAccess;
@@ -54,7 +56,7 @@ public static class RoslynAnalysis
 			}
 		});
 	}
-	public static async Task Analyse(SharpIdeSolutionModel solutionModel)
+	public static async Task Analyse(SharpIdeSolutionModel solutionModel, CancellationToken cancellationToken = default)
 	{
 		Console.WriteLine($"RoslynAnalysis: Loading solution");
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(Analyse)}");
@@ -84,7 +86,11 @@ public static class RoslynAnalysis
 		}
 		using (var ___ = SharpIdeOtel.Source.StartActivity("OpenSolution"))
 		{
-			var solutionInfo = await _msBuildProjectLoader!.LoadSolutionInfoAsync(_sharpIdeSolutionModel.FilePath);
+			//_msBuildProjectLoader!.LoadMetadataForReferencedProjects = true;
+
+			// MsBuildProjectLoader doesn't do a restore which is absolutely required for resolving PackageReferences, if they have changed. I am guessing it just reads from project.assets.json
+			await BuildService.Instance.MsBuildAsync(_sharpIdeSolutionModel.FilePath, BuildType.Restore, cancellationToken);
+			var solutionInfo = await _msBuildProjectLoader!.LoadSolutionInfoAsync(_sharpIdeSolutionModel.FilePath, cancellationToken: cancellationToken);
 			_workspace.ClearSolution();
 			var solution = _workspace.AddSolution(solutionInfo);
 		}
@@ -144,8 +150,37 @@ public static class RoslynAnalysis
 		Console.WriteLine("RoslynAnalysis: Analysis completed.");
 	}
 
+	/// Callers should call UpdateSolutionDiagnostics after this
+	/// Ensure that the SharpIdeSolutionModel has been updated before calling this and any subsequent calls
+	public static async Task ReloadSolution(CancellationToken cancellationToken = default)
+	{
+		Console.WriteLine($"RoslynAnalysis: Reloading Solution");
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(ReloadSolution)}");
+		await _solutionLoadedTcs.Task;
+		Guard.Against.Null(_workspace, nameof(_workspace));
+		Guard.Against.Null(_msBuildProjectLoader, nameof(_msBuildProjectLoader));
+
+		// It is important to note that a Workspace has no concept of MSBuild, nuget packages etc. It is just told about project references and "metadata" references, which are dlls. This is the what MSBuild does - it reads the csproj, and most importantly resolves nuget package references to dlls
+		await BuildService.Instance.MsBuildAsync(_sharpIdeSolutionModel!.FilePath, BuildType.Restore, cancellationToken);
+		var __ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.MSBuildProjectLoader.LoadSolutionInfoAsync");
+		// This call is the expensive part - MSBuild is slow. There doesn't seem to be any incrementalism for solutions.
+		// The best we could do to speed it up is do .LoadProjectInfoAsync for the single project, and somehow munge that into the existing solution
+		var newSolutionInfo = await _msBuildProjectLoader.LoadSolutionInfoAsync(_sharpIdeSolutionModel!.FilePath, cancellationToken: cancellationToken);
+		__?.Dispose();
+
+		var ___ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.Workspace.OnSolutionReloaded");
+		// There doesn't appear to be any noticeable difference between ClearSolution + AddSolution vs OnSolutionReloaded
+		//_workspace.OnSolutionReloaded(newSolutionInfo);
+		_workspace.ClearSolution();
+		_workspace.AddSolution(newSolutionInfo);
+		___?.Dispose();
+		Console.WriteLine("RoslynAnalysis: Solution reloaded");
+	}
+
 	public static async Task UpdateSolutionDiagnostics()
 	{
+		Console.WriteLine("RoslynAnalysis: Updating solution diagnostics");
+		var timer = Stopwatch.StartNew();
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(UpdateSolutionDiagnostics)}");
 		await _solutionLoadedTcs.Task;
 		foreach (var project in _sharpIdeSolutionModel!.AllProjects)
@@ -155,6 +190,8 @@ public static class RoslynAnalysis
 			project.Diagnostics.RemoveRange(project.Diagnostics);
 			project.Diagnostics.AddRange(projectDiagnostics);
 		}
+		timer.Stop();
+		Console.WriteLine($"RoslynAnalysis: Solution diagnostics updated in {timer.ElapsedMilliseconds}ms");
 	}
 
 	public static async Task<ImmutableArray<Diagnostic>> GetProjectDiagnostics(SharpIdeProjectModel projectModel)

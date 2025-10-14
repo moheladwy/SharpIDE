@@ -16,10 +16,12 @@ public enum BuildType
 }
 public class BuildService
 {
+	public static BuildService Instance { get; set; } = null!;
 	public event Func<Task> BuildStarted = () => Task.CompletedTask;
 	public ChannelTextWriter BuildTextWriter { get; } = new ChannelTextWriter();
 	public async Task MsBuildAsync(string solutionOrProjectFilePath, BuildType buildType = BuildType.Build, CancellationToken cancellationToken = default)
 	{
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(BuildService)}.{nameof(MsBuildAsync)}");
 		var normalOut = Console.Out;
 		Console.SetOut(BuildTextWriter);
 		var terminalLogger = InternalTerminalLoggerFactory.CreateLogger();
@@ -86,12 +88,3 @@ public class BuildService
 		return nodesToBuildWith;
 	}
 }
-
-// To build a single project
-// var solutionFile = GetNodesInSolution.ParseSolutionFileFromPath(_solutionFilePath);
-// ArgumentNullException.ThrowIfNull(solutionFile);
-// var projects = GetNodesInSolution.GetCSharpProjectObjectsFromSolutionFile(solutionFile);
-// var projectRoot = projects.First();
-// var buildRequest = new BuildRequestData(
-// 	ProjectInstance.FromProjectRootElement(projectRoot, new ProjectOptions()),
-// 	targetsToBuild: ["Restore", "Build"]);
