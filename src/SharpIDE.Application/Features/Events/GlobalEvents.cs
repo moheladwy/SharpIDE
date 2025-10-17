@@ -17,6 +17,9 @@ public class GlobalEvents
 	public FileSystemWatcherInternal FileSystemWatcherInternal { get; } = new();
 }
 
+/// <summary>
+/// All file system events for files we have filtered for, e.g. excluding bin/obj folders. Does not filter out events triggered by us
+/// </summary>
 public class FileSystemWatcherInternal
 {
 	public EventWrapper<string, Task> DirectoryCreated { get; } = new(_ => Task.CompletedTask);

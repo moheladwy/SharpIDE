@@ -1,12 +1,14 @@
-﻿using SharpIDE.Application.Features.Events;
+﻿using SharpIDE.Application.Features.Analysis;
+using SharpIDE.Application.Features.Evaluation;
+using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.FileWatching;
 
-public class IdeFileChangeHandler
+public class IdeFileExternalChangeHandler
 {
 	public SharpIdeSolutionModel SolutionModel { get; set; } = null!;
-	public IdeFileChangeHandler()
+	public IdeFileExternalChangeHandler()
 	{
 		GlobalEvents.Instance.FileSystemWatcherInternal.FileChanged.Subscribe(OnFileChanged);
 	}
@@ -27,5 +29,18 @@ public class IdeFileChangeHandler
 		}
 		Console.WriteLine($"IdeFileChangeHandler: Changed - {filePath}");
 		await sharpIdeFile.FileContentsChangedExternallyFromDisk.InvokeParallelAsync();
+		if (sharpIdeFile.IsCsprojFile)
+		{
+			await HandleCsprojChanged(filePath);
+		}
+	}
+
+	private async Task HandleCsprojChanged(string filePath)
+	{
+		var project = SolutionModel.AllProjects.SingleOrDefault(p => p.FilePath == filePath);
+		if (project is null) return;
+		await ProjectEvaluation.ReloadProject(filePath);
+		await RoslynAnalysis.ReloadProject(project);
+		await RoslynAnalysis.UpdateSolutionDiagnostics();
 	}
 }
