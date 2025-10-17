@@ -32,7 +32,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	private CustomHighlighter _syntaxHighlighter = new();
 	private PopupMenu _popupMenu = null!;
 
-	private ImmutableArray<(FileLinePositionSpan fileSpan, Diagnostic diagnostic)> _diagnostics = [];
+	private ImmutableArray<SharpIdeDiagnostic> _diagnostics = [];
 	private ImmutableArray<CodeAction> _currentCodeActionsInPopup = [];
 	private bool _fileChangingSuppressBreakpointToggleEvent;
 	
@@ -391,21 +391,18 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	public override void _Draw()
 	{
 		//UnderlineRange(_currentLine, _selectionStartCol, _selectionEndCol, new Color(1, 0, 0));
-		foreach (var (fileSpan, diagnostic) in _diagnostics)
+		foreach (var sharpIdeDiagnostic in _diagnostics)
 		{
-			if (diagnostic.Location.IsInSource)
+			var line = sharpIdeDiagnostic.Span.Start.Line;
+			var startCol = sharpIdeDiagnostic.Span.Start.Character;
+			var endCol = sharpIdeDiagnostic.Span.End.Character;
+			var color = sharpIdeDiagnostic.Diagnostic.Severity switch
 			{
-				var line = fileSpan.StartLinePosition.Line;
-				var startCol = fileSpan.StartLinePosition.Character;
-				var endCol = fileSpan.EndLinePosition.Character;
-				var color = diagnostic.Severity switch
-				{
-					DiagnosticSeverity.Error => new Color(1, 0, 0),
-					DiagnosticSeverity.Warning => new Color("ffb700"),
-					_ => new Color(0, 1, 0) // Info or other
-				};
-				UnderlineRange(line, startCol, endCol, color);
-			}
+				DiagnosticSeverity.Error => new Color(1, 0, 0),
+				DiagnosticSeverity.Warning => new Color("ffb700"),
+				_ => new Color(0, 1, 0) // Info or other
+			};
+			UnderlineRange(line, startCol, endCol, color);
 		}
 	}
 
@@ -450,7 +447,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	}
 
 	[RequiresGodotUiThread]
-	private void SetDiagnosticsModel(ImmutableArray<(FileLinePositionSpan fileSpan, Diagnostic diagnostic)> diagnostics)
+	private void SetDiagnosticsModel(ImmutableArray<SharpIdeDiagnostic> diagnostics)
 	{
 		_diagnostics = diagnostics;
 		QueueRedraw();
