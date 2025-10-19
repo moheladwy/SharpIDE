@@ -1,4 +1,6 @@
-﻿using SharpIDE.Application.Features.Events;
+﻿using Ardalis.GuardClauses;
+using SharpIDE.Application.Features.Events;
+using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 
 namespace SharpIDE.Application.Features.FileWatching;
@@ -11,6 +13,20 @@ public class IdeFileExternalChangeHandler
 	{
 		_fileChangedService = fileChangedService;
 		GlobalEvents.Instance.FileSystemWatcherInternal.FileChanged.Subscribe(OnFileChanged);
+		GlobalEvents.Instance.FileSystemWatcherInternal.FileCreated.Subscribe(OnFileCreated);
+	}
+
+	private async Task OnFileCreated(string filePath)
+	{
+		// Create a new sharpIdeFile, update SolutionModel
+		var sharpIdeFile = SolutionModel.AllFiles.SingleOrDefault(f => f.Path == filePath);
+		if (sharpIdeFile == null)
+		{
+			// If sharpIdeFile is null, it means the file was created externally, and we need to create it and add it to the solution model
+			// sharpIdeFile = TODO;
+		}
+		Guard.Against.Null(sharpIdeFile, nameof(sharpIdeFile));
+		await _fileChangedService.SharpIdeFileAdded(sharpIdeFile, await File.ReadAllTextAsync(filePath));
 	}
 
 	private async Task OnFileChanged(string filePath)

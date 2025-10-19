@@ -739,4 +739,25 @@ public class RoslynAnalysis
 
 		_workspace.TryApplyChanges(newSolution);
 	}
+
+	public async Task AddDocument(SharpIdeFile fileModel, string content)
+	{
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(AddDocument)}");
+		await _solutionLoadedTcs.Task;
+		Guard.Against.Null(fileModel, nameof(fileModel));
+		Guard.Against.NullOrEmpty(content, nameof(content));
+
+		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
+
+		var sourceText = SourceText.From(content, Encoding.UTF8);
+
+		var newSolution = fileModel switch
+		{
+			{ IsRazorFile: true } => _workspace.CurrentSolution.AddAdditionalDocument(DocumentId.CreateNewId(project.Id), fileModel.Name, sourceText, filePath: fileModel.Path),
+			{ IsCsharpFile: true } => _workspace.CurrentSolution.AddDocument(DocumentId.CreateNewId(project.Id), fileModel.Name, sourceText, filePath: fileModel.Path),
+			_ => throw new InvalidOperationException("AddDocument failed: File is not in workspace")
+		};
+
+		_workspace.TryApplyChanges(newSolution);
+	}
 }
