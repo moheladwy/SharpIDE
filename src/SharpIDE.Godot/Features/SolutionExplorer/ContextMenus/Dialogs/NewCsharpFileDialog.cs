@@ -26,8 +26,29 @@ public partial class NewCsharpFileDialog : ConfirmationDialog
         _fileTypeItemList.AddItem("Record", _classIcon);
         _fileTypeItemList.AddItem("Struct", _classIcon);
         _fileTypeItemList.AddItem("Enum", _classIcon);
+        _fileTypeItemList.Select(0);
         _fileTypeItemList.ItemSelected += FileTypeItemListOnItemSelected;
         Confirmed += OnConfirmed;
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (@event is InputEventKey { Pressed: true, Keycode: Key.Enter })
+        {
+            OnConfirmed();
+        }
+        else if (@event is InputEventKey { Pressed: true, Keycode: Key.Down })
+        {
+            var selectedIndex = _fileTypeItemList.GetSelectedItems()[0];
+            var nextIndex = (selectedIndex + 1) % _fileTypeItemList.GetItemCount();
+            _fileTypeItemList.Select(nextIndex);
+        }
+        else if (@event is InputEventKey { Pressed: true, Keycode: Key.Up })
+        {
+            var selectedIndex = _fileTypeItemList.GetSelectedItems()[0];
+            var previousIndex = (selectedIndex - 1 + _fileTypeItemList.GetItemCount()) % _fileTypeItemList.GetItemCount();
+            _fileTypeItemList.Select(previousIndex);
+        }
     }
 
     private void FileTypeItemListOnItemSelected(long index)
@@ -38,7 +59,7 @@ public partial class NewCsharpFileDialog : ConfirmationDialog
     private void OnConfirmed()
     {
         var fileName = _nameLineEdit.Text.Trim();
-        if (string.IsNullOrEmpty(fileName))
+        if (IsNameInvalid(fileName))
         {
             GD.PrintErr("File name cannot be empty.");
             return;
@@ -53,5 +74,11 @@ public partial class NewCsharpFileDialog : ConfirmationDialog
         {
            //await _ideFileOperationsService.CreateCSharpFile(ParentFolder, fileName);
         });
+        QueueFree();
+    }
+    
+    private bool IsNameInvalid(string name)
+    {
+        return string.IsNullOrWhiteSpace(name);
     }
 }
