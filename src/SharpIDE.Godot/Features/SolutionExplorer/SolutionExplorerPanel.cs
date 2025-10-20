@@ -160,13 +160,12 @@ public partial class SolutionExplorerPanel : MarginContainer
 	                _ => Task.CompletedTask
 	            })).AddTo(this);
 
-	        var filesView = slnFolder.Files
-		        .WithInitialPopulation(s => CreateFileTreeItem(_tree, folderItem, s))
-		        .CreateView(y => new TreeItemContainer());
+	        var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
+	        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
 	        filesView.ObserveChanged()
 	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 	            {
-	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFileTreeItem(_tree, folderItem, innerEvent)),
+	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
 	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 	                _ => Task.CompletedTask
 	            })).AddTo(this);
@@ -194,13 +193,12 @@ public partial class SolutionExplorerPanel : MarginContainer
 			})).AddTo(this);
 
 		// Observe project files
-		var filesView = projectModel.Files
-			.WithInitialPopulation(s => CreateFileTreeItem(_tree, projectItem, s))
-			.CreateView(y => new TreeItemContainer());
+		var filesView = projectModel.Files.CreateView(y => new TreeItemContainer());
+		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
 		filesView.ObserveChanged()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 			{
-				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFileTreeItem(_tree, projectItem, innerEvent)),
+				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, projectItem, innerEvent.NewItem.Value)),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
 			})).AddTo(this);
@@ -228,13 +226,12 @@ public partial class SolutionExplorerPanel : MarginContainer
 			})).AddTo(this);
 
 		// Observe files
-		var filesView = sharpIdeFolder.Files
-			.WithInitialPopulation(s => CreateFileTreeItem(_tree, folderItem, s))
-			.CreateView(y => new TreeItemContainer());
+		var filesView = sharpIdeFolder.Files.CreateView(y => new TreeItemContainer());
+		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
 		filesView.ObserveChanged()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 			{
-				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => CreateFileTreeItem(_tree, folderItem, innerEvent)),
+				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
 			})).AddTo(this);
@@ -242,13 +239,13 @@ public partial class SolutionExplorerPanel : MarginContainer
 	}
 
 	[RequiresGodotUiThread]
-	private void CreateFileTreeItem(Tree tree, TreeItem parent, ViewChangedEvent<SharpIdeFile, TreeItemContainer> e)
+	private TreeItem CreateFileTreeItem(Tree tree, TreeItem parent, SharpIdeFile sharpIdeFile)
 	{
 		var fileItem = tree.CreateItem(parent);
-		fileItem.SetText(0, e.NewItem.Value.Name);
+		fileItem.SetText(0, sharpIdeFile.Name);
 		fileItem.SetIcon(0, CsharpFileIcon);
-		fileItem.SetMetadata(0, new RefCountedContainer<SharpIdeFile>(e.NewItem.Value));
-		e.NewItem.View.Value = fileItem;
+		fileItem.SetMetadata(0, new RefCountedContainer<SharpIdeFile>(sharpIdeFile));
+		return fileItem;
 	}
 
 	private async Task FreeTreeItem(TreeItem? item)
