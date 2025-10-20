@@ -75,6 +75,7 @@ public partial class SolutionExplorerPanel
     }
 
     private readonly PackedScene _newDirectoryDialogScene = GD.Load<PackedScene>("uid://bgi4u18y8pt4x");
+    private readonly PackedScene _newCsharpFileDialogScene = GD.Load<PackedScene>("uid://chnb7gmcdg0ww");
     private void OnCreateNewSubmenuPressed(long id, SharpIdeFolder folder)
     {
         var actionId = (CreateNewSubmenuOptions)id;
@@ -87,7 +88,10 @@ public partial class SolutionExplorerPanel
         }
         else if (actionId is CreateNewSubmenuOptions.CSharpFile)
         {
-            //OpenCreateNewCSharpFileDialog(folder);
+            var newCsharpFileDialog = _newCsharpFileDialogScene.Instantiate<NewCsharpFileDialog>();
+            newCsharpFileDialog.ParentFolder = folder;
+            AddChild(newCsharpFileDialog);
+            newCsharpFileDialog.PopupCentered();
         }
     }
 }

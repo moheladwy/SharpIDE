@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3 uid="uid://chnb7gmcdg0ww"]
+
+[ext_resource type="Script" uid="uid://celjpet3ik464" path="res://Features/SolutionExplorer/ContextMenus/Dialogs/NewCsharpFileDialog.cs" id="1_fod37"]
+
+[node name="NewCsharpFileDialog" type="ConfirmationDialog"]
+oversampling_override = 1.0
+title = "Create new C# file"
+size = Vector2i(350, 230)
+visible = true
+script = ExtResource("1_fod37")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 342.0
+offset_bottom = 181.0
+
+[node name="CSharpFileNameLineEdit" type="LineEdit" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Name"
+
+[node name="FileTypeItemList" type="ItemList" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+allow_search = false
+auto_height = true
