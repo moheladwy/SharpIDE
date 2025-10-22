@@ -53,6 +53,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	
 	public override void _Ready()
 	{
+		CodeCompletionPrefixes = ["."];
 		SyntaxHighlighter = _syntaxHighlighter;
 		_popupMenu = GetNode<PopupMenu>("CodeFixesMenu");
 		_popupMenu.IdPressed += OnCodeFixSelected;
@@ -529,7 +530,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			var completions = await _roslynAnalysis.GetCodeCompletionsForDocumentAtPosition(_currentFile, linePos);
 			await this.InvokeAsync(() =>
 			{
-				foreach (var (index, completionItem) in completions.ItemsList.Take(100).Index())
+				foreach (var completionItem in completions.ItemsList)
 				{
 					var symbolKindString = CollectionExtensions.GetValueOrDefault(completionItem.Properties, "SymbolKind");
 					var symbolKind = symbolKindString is null ? null : (SymbolKind?)int.Parse(symbolKindString);

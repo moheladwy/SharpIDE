@@ -567,11 +567,7 @@ public class RoslynAnalysis
 		var sourceText = await document.GetTextAsync(cancellationToken);
 		var position = sourceText.Lines.GetPosition(linePosition);
 		var completions = await completionService.GetCompletionsAsync(document, position, cancellationToken: cancellationToken);
-
-		// foreach (var item in completions.ItemsList)
-		// {
-		// 	Console.WriteLine($"Completion: {item.DisplayText}");
-		// }
+		//var filterItems = completionService.FilterItems(document, completions.ItemsList.AsImmutable(), "va");
 		return completions;
 	}
 
