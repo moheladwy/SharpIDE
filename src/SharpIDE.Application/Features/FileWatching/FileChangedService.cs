@@ -53,6 +53,7 @@ public class FileChangedService(RoslynAnalysis roslynAnalysis, IdeOpenTabsFileMa
 
 	public async Task SharpIdeFileRemoved(SharpIdeFile file)
 	{
+		await file.FileDeleted.InvokeParallelAsync();
 		if (file.IsRoslynWorkspaceFile)
 		{
 			await HandleWorkspaceFileRemoved(file);

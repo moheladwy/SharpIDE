@@ -43,6 +43,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	private ImmutableArray<CodeAction> _currentCodeActionsInPopup = [];
 	private bool _fileChangingSuppressBreakpointToggleEvent;
 	private bool _settingWholeDocumentTextSuppressLineEditsEvent; // A dodgy workaround - setting the whole document doesn't guarantee that the line count stayed the same etc. We are still going to have broken highlighting. TODO: Investigate getting minimal text change ranges, and change those ranges only
+	private bool _fileDeleted;
 	
     [Inject] private readonly IdeOpenTabsFileManager _openTabsFileManager = null!;
     [Inject] private readonly RunService _runService = null!;
@@ -73,6 +74,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	private async Task OnSolutionAltered()
 	{
 		if (_currentFile is null) return;
+		if (_fileDeleted) return;
 		GD.Print($"[{_currentFile.Name}] Solution altered, updating project diagnostics for file");
 		await _solutionAlteredCts.CancelAsync();
 		_solutionAlteredCts = new CancellationTokenSource();
@@ -125,6 +127,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	public override void _ExitTree()
 	{
 		_currentFile?.FileContentsChangedExternally.Unsubscribe(OnFileChangedExternally);
+		_currentFile?.FileDeleted.Unsubscribe(OnFileDeleted);
 		GlobalEvents.Instance.SolutionAltered.Unsubscribe(OnSolutionAltered);
 		if (_currentFile is not null) _openTabsFileManager.CloseFile(_currentFile);
 	}
@@ -307,6 +310,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	private async Task OnFileChangedExternally(SharpIdeFileLinePosition? linePosition)
 	{
+		if (_fileDeleted) return; // We have QueueFree'd this node, however it may not have been freed yet.
 		var fileContents = await _openTabsFileManager.GetFileTextAsync(_currentFile);
 		await this.InvokeAsync(() =>
 		{
@@ -340,6 +344,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		_currentFile = file;
 		var readFileTask = _openTabsFileManager.GetFileTextAsync(file);
 		_currentFile.FileContentsChangedExternally.Subscribe(OnFileChangedExternally);
+		_currentFile.FileDeleted.Subscribe(OnFileDeleted);
 		
 		var syntaxHighlighting = _roslynAnalysis.GetDocumentSyntaxHighlighting(_currentFile);
 		var razorSyntaxHighlighting = _roslynAnalysis.GetRazorDocumentSyntaxHighlighting(_currentFile);
@@ -362,6 +367,12 @@ public partial class SharpIdeCodeEdit : CodeEdit
 			await projectDiagnosticsForFile;
 			await this.InvokeAsync(async () => SetProjectDiagnostics(await projectDiagnosticsForFile));
 		});
+	}
+
+	private async Task OnFileDeleted()
+	{
+		_fileDeleted = true;
+		QueueFree();
 	}
 
 	public void UnderlineRange(int line, int caretStartCol, int caretEndCol, Color color, float thickness = 1.5f)
