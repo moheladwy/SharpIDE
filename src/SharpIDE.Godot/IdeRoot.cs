@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Godot;
+using Microsoft.Extensions.Logging;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.Events;
@@ -46,6 +47,7 @@ public partial class IdeRoot : Control
     [Inject] private readonly IdeOpenTabsFileManager _openTabsFileManager = null!;
     [Inject] private readonly RoslynAnalysis _roslynAnalysis = null!;
     [Inject] private readonly SharpIdeSolutionModificationService _sharpIdeSolutionModificationService = null!;
+    [Inject] private readonly ILogger<IdeRoot> _logger = null!;
 
 	public override void _EnterTree()
 	{
@@ -136,7 +138,10 @@ public partial class IdeRoot : Control
 		_ = Task.GodotRun(async () =>
 		{
 			GD.Print($"Selected: {path}");
-			var solutionModel = await VsPersistenceMapper.GetSolutionModel(path);
+			var timer = Stopwatch.StartNew();
+			var solutionModel = await VsPersistenceMapper.GetSolutionModel(path); // TODO: Probably refactor into a DI Service
+			timer.Stop();
+			_logger.LogInformation("Solution model fully created in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
 			await _nodeReadyTcs.Task;
 			_solutionExplorerPanel.SolutionModel = solutionModel;
 			_codeEditorPanel.Solution = solutionModel;
