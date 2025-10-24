@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis.Razor.SemanticTokens;
 using Microsoft.CodeAnalysis.Remote.Razor.ProjectSystem;
 using Microsoft.CodeAnalysis.Remote.Razor.SemanticTokens;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.Extensions.Logging;
 using Roslyn.LanguageServer.Protocol;
 using SharpIDE.Application.Features.Analysis.FixLoaders;
 using SharpIDE.Application.Features.Analysis.Razor;
@@ -32,8 +33,10 @@ using DiagnosticSeverity = Microsoft.CodeAnalysis.DiagnosticSeverity;
 
 namespace SharpIDE.Application.Features.Analysis;
 
-public class RoslynAnalysis
+public class RoslynAnalysis(ILogger<RoslynAnalysis> logger)
 {
+	private readonly ILogger<RoslynAnalysis> _logger = logger;
+
 	public static AdhocWorkspace? _workspace;
 	private static CustomMsBuildProjectLoader? _msBuildProjectLoader;
 	private static RemoteSnapshotManager? _snapshotManager;
@@ -54,14 +57,14 @@ public class RoslynAnalysis
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine($"RoslynAnalysis: Error during analysis: {e}");
+				_logger.LogError(e, "An error occurred during analysis");
 			}
 		});
 	}
 	public async Task Analyse(SharpIdeSolutionModel solutionModel, CancellationToken cancellationToken = default)
 	{
-		Console.WriteLine($"RoslynAnalysis: Loading solution");
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(Analyse)}");
+		_logger.LogInformation("RoslynAnalysis: Loading solution {SolutionPath}", solutionModel.FilePath);
 		_sharpIdeSolutionModel = solutionModel;
 		var timer = Stopwatch.StartNew();
 		if (_workspace is null)
@@ -76,7 +79,7 @@ public class RoslynAnalysis
 
 			var host = MefHostServices.Create(container);
 			_workspace = new AdhocWorkspace(host);
-			_workspace.RegisterWorkspaceFailedHandler(o => Console.WriteLine($"Workspace failed: {o.Diagnostic.Message}"));
+			_workspace.RegisterWorkspaceFailedHandler(o => _logger.LogError("WorkspaceFailedHandler - Workspace failure: {DiagnosticMessage}", o.Diagnostic.Message));
 
 			var snapshotManager = container.GetExports<RemoteSnapshotManager>().FirstOrDefault();
 			_snapshotManager = snapshotManager;
@@ -102,7 +105,7 @@ public class RoslynAnalysis
 			var solution = _workspace.AddSolution(solutionInfo);
 		}
 		timer.Stop();
-		Console.WriteLine($"RoslynAnalysis: Solution loaded in {timer.ElapsedMilliseconds}ms");
+		_logger.LogInformation("RoslynAnalysis: Solution loaded in {ElapsedMilliseconds}ms", timer.ElapsedMilliseconds);
 		_solutionLoadedTcs.SetResult();
 
 		using (var ____ = SharpIdeOtel.Source.StartActivity("LoadAnalyzersAndFixers"))
@@ -154,15 +157,15 @@ public class RoslynAnalysis
 		// 	// 	// }
 		// 	// }
 		// }
-		Console.WriteLine("RoslynAnalysis: Analysis completed.");
+		_logger.LogInformation("RoslynAnalysis: Analysis completed");
 	}
 
 	/// Callers should call UpdateSolutionDiagnostics after this
 	/// Ensure that the SharpIdeSolutionModel has been updated before calling this and any subsequent calls
 	public async Task ReloadSolution(CancellationToken cancellationToken = default)
 	{
-		Console.WriteLine($"RoslynAnalysis: Reloading Solution");
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(ReloadSolution)}");
+		_logger.LogInformation("RoslynAnalysis: Reloading solution");
 		await _solutionLoadedTcs.Task;
 		Guard.Against.Null(_workspace, nameof(_workspace));
 		Guard.Against.Null(_msBuildProjectLoader, nameof(_msBuildProjectLoader));
@@ -181,21 +184,21 @@ public class RoslynAnalysis
 		_workspace.ClearSolution();
 		_workspace.AddSolution(newSolutionInfo);
 		___?.Dispose();
-		Console.WriteLine("RoslynAnalysis: Solution reloaded");
+		_logger.LogInformation("RoslynAnalysis: Solution reloaded");
 	}
 
 	/// Callers should call UpdateSolutionDiagnostics after this
 	/// Ensure that the SharpIdeSolutionModel has been updated before calling this and any subsequent calls
 	public async Task ReloadProject(SharpIdeProjectModel projectModel, CancellationToken cancellationToken = default)
 	{
-		Console.WriteLine($"RoslynAnalysis: Reloading Project {projectModel.FilePath}");
-		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(ReloadSolution)}");
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(ReloadProject)}");
+		_logger.LogInformation("RoslynAnalysis: Reloading project {ProjectPath}", projectModel.FilePath);
 		await _solutionLoadedTcs.Task;
 		Guard.Against.Null(_workspace, nameof(_workspace));
 		Guard.Against.Null(_msBuildProjectLoader, nameof(_msBuildProjectLoader));
 
 		await BuildService.Instance.MsBuildAsync(_sharpIdeSolutionModel!.FilePath, BuildType.Restore, cancellationToken);
-		var __ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(MSBuildProjectLoader)}.{nameof(MSBuildProjectLoader.LoadProjectInfoAsync)}");
+		var __ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(CustomMsBuildProjectLoader)}.{nameof(CustomMsBuildProjectLoader.LoadProjectInfosAsync)}");
 
 		var thisProject = _workspace.CurrentSolution.Projects.Single(s => s.FilePath == projectModel.FilePath);
 
@@ -209,7 +212,7 @@ public class RoslynAnalysis
 		var loadedProjectInfos = await _msBuildProjectLoader.LoadProjectInfosAsync(projectPathsToReload, null, cancellationToken: cancellationToken);
 		__?.Dispose();
 
-		var ___ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.Workspace.asdf");
+		var ___ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.Workspace.UpdateSolution");
 
 		var oldProjectIdFilePathMap = _workspace.CurrentSolution.Projects.ToDictionary(keySelector: static p => (p.FilePath!, p.Name), elementSelector: static p => p.Id);
 
@@ -257,7 +260,7 @@ public class RoslynAnalysis
 		_workspace.UpdateReferencesAfterAdd();
 
 		___?.Dispose();
-		Console.WriteLine("RoslynAnalysis: Project reloaded");
+		_logger.LogInformation("RoslynAnalysis: Project reloaded");
 		return;
 		ProjectReference MapProjectReference(ProjectReference oldRef) => new ProjectReference(projectIdMap[oldRef.ProjectId], oldRef.Aliases, oldRef.EmbedInteropTypes);
 
@@ -271,9 +274,9 @@ public class RoslynAnalysis
 
 	public async Task UpdateSolutionDiagnostics(CancellationToken cancellationToken = default)
 	{
-		Console.WriteLine("RoslynAnalysis: Updating solution diagnostics");
-		var timer = Stopwatch.StartNew();
 		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(RoslynAnalysis)}.{nameof(UpdateSolutionDiagnostics)}");
+		_logger.LogInformation("RoslynAnalysis: Updating solution diagnostics");
+		var timer = Stopwatch.StartNew();
 		await _solutionLoadedTcs.Task;
 		foreach (var project in _sharpIdeSolutionModel!.AllProjects)
 		{
@@ -283,7 +286,7 @@ public class RoslynAnalysis
 			project.Diagnostics.AddRange(projectDiagnostics);
 		}
 		timer.Stop();
-		Console.WriteLine($"RoslynAnalysis: Solution diagnostics updated in {timer.ElapsedMilliseconds}ms");
+		_logger.LogInformation("RoslynAnalysis: Solution diagnostics updated in {ElapsedMilliseconds}ms", timer.ElapsedMilliseconds);
 	}
 
 	public async Task<ImmutableArray<Diagnostic>> GetProjectDiagnostics(SharpIdeProjectModel projectModel, CancellationToken cancellationToken = default)
@@ -461,7 +464,7 @@ public class RoslynAnalysis
 		];
 		var result = sharpIdeRazorSpans.OrderBy(s => s.Span.AbsoluteIndex).ToImmutableArray();
 		timer.Stop();
-		Console.WriteLine($"RoslynAnalysis: Razor syntax highlighting for {fileModel.Name} took {timer.ElapsedMilliseconds}ms");
+		_logger.LogInformation("RoslynAnalysis: Razor syntax highlighting for {FileName} took {ElapsedMilliseconds}ms", fileModel.Name, timer.ElapsedMilliseconds);
 		return result;
 	}
 
@@ -668,7 +671,7 @@ public class RoslynAnalysis
 		return (symbol, linePositionSpan);
 	}
 
-	private static async Task<(ISymbol? symbol, LinePositionSpan? linePositionSpan)> LookupSymbolInRazor(SharpIdeFile fileModel, LinePosition linePosition, CancellationToken cancellationToken = default)
+	private async Task<(ISymbol? symbol, LinePositionSpan? linePositionSpan)> LookupSymbolInRazor(SharpIdeFile fileModel, LinePosition linePosition, CancellationToken cancellationToken = default)
 	{
 		var sharpIdeProjectModel = ((IChildSharpIdeNode) fileModel).GetNearestProjectNode()!;
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == sharpIdeProjectModel!.FilePath);
@@ -691,7 +694,7 @@ public class RoslynAnalysis
 		return (symbol, linePositionSpan);
 	}
 
-	private static async Task<(ISymbol? symbol, LinePositionSpan? linePositionSpan)> LookupSymbolInCs(SharpIdeFile fileModel, LinePosition linePosition)
+	private async Task<(ISymbol? symbol, LinePositionSpan? linePositionSpan)> LookupSymbolInCs(SharpIdeFile fileModel, LinePosition linePosition)
 	{
 		var project = _workspace!.CurrentSolution.Projects.Single(s => s.FilePath == ((IChildSharpIdeNode)fileModel).GetNearestProjectNode()!.FilePath);
 		var document = project.Documents.Single(s => s.FilePath == fileModel.Path);
@@ -704,18 +707,18 @@ public class RoslynAnalysis
 		return GetSymbolAtPosition(semanticModel, syntaxRoot!, position);
 	}
 
-	private static (ISymbol? symbol, LinePositionSpan? linePositionSpan) GetSymbolAtPosition(SemanticModel semanticModel, SyntaxNode root, int position)
+	private (ISymbol? symbol, LinePositionSpan? linePositionSpan) GetSymbolAtPosition(SemanticModel semanticModel, SyntaxNode root, int position)
 	{
 		var node = root.FindToken(position).Parent!;
 		var symbol = semanticModel.GetSymbolInfo(node).Symbol ?? semanticModel.GetDeclaredSymbol(node);
 		if (symbol is null)
 		{
-			Console.WriteLine("No symbol found at position");
+			_logger.LogInformation("No symbol found at position {Position}", position);
 			return (null, null);
 		}
 
 		var linePositionSpan = root.SyntaxTree.GetLineSpan(node.Span).Span;
-		Console.WriteLine($"Symbol found: {symbol.Name} ({symbol.Kind}) - {symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}");
+		_logger.LogInformation("Symbol found: {SymbolName} ({SymbolKind}) - {SymbolDisplayString}", symbol.Name, symbol.Kind, symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
 		return (symbol, linePositionSpan);
 	}
 

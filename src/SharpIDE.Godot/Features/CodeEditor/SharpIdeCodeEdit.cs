@@ -73,6 +73,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 	private CancellationTokenSource _solutionAlteredCts = new();
 	private async Task OnSolutionAltered()
 	{
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(SharpIdeCodeEdit)}.{nameof(OnSolutionAltered)}");
 		if (_currentFile is null) return;
 		if (_fileDeleted) return;
 		GD.Print($"[{_currentFile.Name}] Solution altered, updating project diagnostics for file");
@@ -286,9 +287,9 @@ public partial class SharpIdeCodeEdit : CodeEdit
 
 	private void OnTextChanged()
 	{
-		var __ = SharpIdeOtel.Source.StartActivity($"{nameof(SharpIdeCodeEdit)}.{nameof(OnTextChanged)}");
 		_ = Task.GodotRun(async () =>
 		{
+			var __ = SharpIdeOtel.Source.StartActivity($"{nameof(SharpIdeCodeEdit)}.{nameof(OnTextChanged)}");
 			_currentFile.IsDirty.Value = true;
 			await _fileChangedService.SharpIdeFileChanged(_currentFile, Text, FileChangeType.IdeUnsavedChange);
 			__?.Dispose();
