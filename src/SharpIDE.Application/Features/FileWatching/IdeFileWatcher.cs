@@ -33,7 +33,7 @@ public sealed class IdeFileWatcher(ILogger<IdeFileWatcher> logger) : IDisposable
 		fileWatcher.OnCreated += OnEvent;
 		fileWatcher.OnDeleted += OnEvent;
 		fileWatcher.OnRenamed += OnEvent;
-		fileWatcher.OnError += static (s, e) => Console.WriteLine($"FileSystemWatcher: Error - {e.GetException().Message}");
+		fileWatcher.OnError += (s, e) => _logger.LogError(e.GetException(), "FileSystemWatcher: Error");
 
 		fileWatcher.Start();
 		_fileWatcher = fileWatcher;

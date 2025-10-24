@@ -141,8 +141,9 @@ public partial class IdeRoot : Control
 			var timer = Stopwatch.StartNew();
 			var solutionModel = await VsPersistenceMapper.GetSolutionModel(path); // TODO: Probably refactor into a DI Service
 			timer.Stop();
-			_logger.LogInformation("Solution model fully created in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
 			await _nodeReadyTcs.Task;
+			// Do not use injected services until after _nodeReadyTcs - Services aren't injected until _Ready
+			_logger.LogInformation("Solution model fully created in {ElapsedMilliseconds} ms", timer.ElapsedMilliseconds);
 			_solutionExplorerPanel.SolutionModel = solutionModel;
 			_codeEditorPanel.Solution = solutionModel;
 			_bottomPanelManager.Solution = solutionModel;
