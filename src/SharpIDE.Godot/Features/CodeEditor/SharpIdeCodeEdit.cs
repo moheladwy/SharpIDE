@@ -465,8 +465,9 @@ public partial class SharpIdeCodeEdit : CodeEdit
 						_ => CodeCompletionKind.PlainText
 					};
 					var isKeyword = wellKnownTags.Contains(WellKnownTags.Keyword);
-					var icon = GetIconForCompletion(symbolKind, typeKind, accessibilityModifier, isKeyword);
 					AddCodeCompletionOption(godotCompletionType, completionItem.DisplayText, completionItem.DisplayText, icon: icon, value: new RefCountedContainer<CompletionItem>(completionItem));
+					var isExtensionMethod = wellKnownTags.Contains(WellKnownTags.ExtensionMethod);
+					var icon = GetIconForCompletion(symbolKind, typeKind, accessibilityModifier, isKeyword, isExtensionMethod);
 				}
 				// partially working - displays menu only when caret is what CodeEdit determines as valid
 				UpdateCodeCompletionOptions(true);
