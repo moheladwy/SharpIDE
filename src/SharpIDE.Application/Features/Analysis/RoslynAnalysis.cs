@@ -19,6 +19,7 @@ using Microsoft.CodeAnalysis.Razor.Remote;
 using Microsoft.CodeAnalysis.Razor.SemanticTokens;
 using Microsoft.CodeAnalysis.Remote.Razor.ProjectSystem;
 using Microsoft.CodeAnalysis.Remote.Razor.SemanticTokens;
+using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Shared.Extensions;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Logging;
@@ -658,7 +659,13 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 			}
 		}
 
-		var allChanges = updatedSolution.GetChanges(originalSolution);
+		var changedFilesWithText = await GetNaiveSolutionChanges(originalSolution, updatedSolution, cancellationToken);
+		return changedFilesWithText;
+	}
+
+	private async Task<List<(SharpIdeFile File, string UpdatedText)>> GetNaiveSolutionChanges(Solution oldSolution, Solution newSolution, CancellationToken cancellationToken = default)
+	{
+		var allChanges = newSolution.GetChanges(oldSolution);
 		// TODO: Handle added and removed documents
 		var changedDocIds = allChanges
 			.GetExplicitlyChangedSourceGeneratedDocuments().Union(allChanges
@@ -667,7 +674,7 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 
 		var changedFilesWithText = await changedDocIds
 			.DistinctBy(s => s.Id) // probably not necessary
-			.Select(id => updatedSolution.GetDocument(id))
+			.Select(id => newSolution.GetDocument(id))
 			//.Select(id => updatedSolution.GetDocument(id) ?? await _workspace.CurrentSolution.GetSourceGeneratedDocumentAsync(id, cancellationToken))
 			.Where(d => d is not null)
 			.OfType<Document>() // ensures non-null
@@ -679,7 +686,6 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 				return (sharpFile, text.ToString());
 			})
 			.ToListAsync(cancellationToken);
-
 		return changedFilesWithText;
 	}
 
@@ -707,6 +713,22 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 			}
 		}
 		return results.ToImmutableArray();
+	}
+
+	/// Returns the list of files that would be modified by applying the rename. Does not apply the changes to the workspace sln
+	public async Task<List<(SharpIdeFile File, string UpdatedText)>> GetRenameApplyChanges(ISymbol symbol, string newName, CancellationToken cancellationToken = default)
+	{
+		var symbolRenameOptions = new SymbolRenameOptions
+		{
+			RenameOverloads = true,
+			RenameInStrings = false,
+			RenameInComments = false,
+			RenameFile = false
+		};
+		var currentSolution = _workspace!.CurrentSolution;
+		var newSolution = await Renamer.RenameSymbolAsync(currentSolution, symbol, symbolRenameOptions, newName, cancellationToken);
+		var changedFilesWithText = await GetNaiveSolutionChanges(currentSolution, newSolution, cancellationToken);
+		return changedFilesWithText;
 	}
 
 	public async Task<ImmutableArray<ReferencedSymbol>> FindAllSymbolReferences(ISymbol symbol, CancellationToken cancellationToken = default)
