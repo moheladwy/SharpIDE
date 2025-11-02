@@ -59,31 +59,8 @@ public partial class NugetPanel : Control
         _ = Task.GodotRun(async () =>
         {
             if (_solution is null) throw new InvalidOperationException("Solution is null but should not be");
-
             _ = Task.GodotRun(PopulateSearchResults);
-            
-            _ = Task.GodotRun(async () =>
-            {
-                var project = _solution.AllProjects.First(s => s.Name == "ProjectA");
-                await project.MsBuildEvaluationProjectTask;
-                var installedPackages = await ProjectEvaluation.GetPackageReferencesForProject(project);
-                var idePackageResult = await _nugetClientService.GetPackagesForInstalledPackages(project.ChildNodeBasePath, installedPackages);
-                var scenes = idePackageResult.Select(s =>
-                {
-                    var scene = _packageEntryScene.Instantiate<PackageEntry>();
-                    scene.PackageResult = s;
-                    scene.PackageSelected += OnPackageSelected;
-                    return scene;
-                }).ToList();
-                await this.InvokeAsync(() =>
-                {
-                    foreach (var scene in scenes)
-                    {
-                        var container = scene.PackageResult.InstalledNugetPackageInfo!.IsTransitive ? _implicitlyInstalledPackagesItemList : _installedPackagesVboxContainer;
-                        container.AddChild(scene);
-                    }
-                });
-            });
+            _ = Task.GodotRun(PopulateInstalledPackages);
         });
     }
 
@@ -108,6 +85,29 @@ public partial class NugetPanel : Control
             foreach (var scene in scenes)
             {
                 _availablePackagesItemList.AddChild(scene);
+            }
+        });
+    }
+
+    private async Task PopulateInstalledPackages()
+    {
+        var project = _solution!.AllProjects.First(s => s.Name == "ProjectA");
+        await project.MsBuildEvaluationProjectTask;
+        var installedPackages = await ProjectEvaluation.GetPackageReferencesForProject(project);
+        var idePackageResult = await _nugetClientService.GetPackagesForInstalledPackages(project.ChildNodeBasePath, installedPackages);
+        var scenes = idePackageResult.Select(s =>
+        {
+            var scene = _packageEntryScene.Instantiate<PackageEntry>();
+            scene.PackageResult = s;
+            scene.PackageSelected += OnPackageSelected;
+            return scene;
+        }).ToList();
+        await this.InvokeAsync(() =>
+        {
+            foreach (var scene in scenes)
+            {
+                var container = scene.PackageResult.InstalledNugetPackageInfo!.IsTransitive ? _implicitlyInstalledPackagesItemList : _installedPackagesVboxContainer;
+                container.AddChild(scene);
             }
         });
     }
