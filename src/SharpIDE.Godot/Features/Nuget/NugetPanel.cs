@@ -10,6 +10,7 @@ public partial class NugetPanel : Control
     private VBoxContainer _installedPackagesVboxContainer = null!;
     private VBoxContainer _implicitlyInstalledPackagesItemList = null!;
     private VBoxContainer _availablePackagesItemList = null!;
+    private OptionButton _solutionOrProjectOptionButton = null!;
     
     private NugetPackageDetails _nugetPackageDetails = null!;
     
@@ -18,6 +19,7 @@ public partial class NugetPanel : Control
     [Inject] private readonly NugetClientService _nugetClientService = null!;
     
     private readonly PackedScene _packageEntryScene = ResourceLoader.Load<PackedScene>("uid://cqc2xlt81ju8s");
+    private readonly Texture2D _csprojIcon = ResourceLoader.Load<Texture2D>("uid://cqt30ma6xgder");
     
     private IdePackageResult? _selectedPackage;
 
@@ -26,6 +28,7 @@ public partial class NugetPanel : Control
         _installedPackagesVboxContainer = GetNode<VBoxContainer>("%InstalledPackagesVBoxContainer");
         _implicitlyInstalledPackagesItemList = GetNode<VBoxContainer>("%ImplicitlyInstalledPackagesVBoxContainer");
         _availablePackagesItemList = GetNode<VBoxContainer>("%AvailablePackagesVBoxContainer");
+        _solutionOrProjectOptionButton = GetNode<OptionButton>("%SolutionOrProjectOptionButton");
         _nugetPackageDetails = GetNode<NugetPackageDetails>("%NugetPackageDetails");
         _nugetPackageDetails.Visible = false;
         _installedPackagesVboxContainer.QueueFreeChildren();
@@ -35,11 +38,15 @@ public partial class NugetPanel : Control
         _ = Task.GodotRun(async () =>
         {
             await Task.Delay(300);
+            foreach (var project in Solution!.AllProjects)
+            {
+                _solutionOrProjectOptionButton.AddIconItem(_csprojIcon, project.Name);
+            }
             var result = await _nugetClientService.GetTop100Results(Solution!.DirectoryPath);
             
             _ = Task.GodotRun(async () =>
             {
-                var project = Solution.AllProjects.First(s => s.Name == "ProjectB");
+                var project = Solution.AllProjects.First(s => s.Name == "ProjectA");
                 await project.MsBuildEvaluationProjectTask;
                 var installedPackages = await ProjectEvaluation.GetPackageReferencesForProject(project);
                 var idePackageResult = await _nugetClientService.GetPackagesForInstalledPackages(project.ChildNodeBasePath, installedPackages);

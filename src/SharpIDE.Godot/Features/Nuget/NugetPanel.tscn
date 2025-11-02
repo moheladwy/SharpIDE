@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://duyxg107nfh2f"]
+[gd_scene load_steps=5 format=3 uid="uid://duyxg107nfh2f"]
 
 [ext_resource type="Script" uid="uid://du4v3dyf0y3d8" path="res://Features/Nuget/NugetPanel.cs" id="1_t4nyu"]
+[ext_resource type="Texture2D" uid="uid://btlxqx3c08fjj" path="res://Features/SolutionExplorer/Resources/SlnIcon.svg" id="2_3q32m"]
 [ext_resource type="PackedScene" uid="uid://cqc2xlt81ju8s" path="res://Features/Nuget/PackageEntry.tscn" id="2_arg4f"]
 [ext_resource type="PackedScene" uid="uid://odaefch2sdft" path="res://Features/Nuget/NugetPackageDetails.tscn" id="3_yr6k7"]
 
@@ -59,12 +60,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Search for a package"
 
-[node name="OptionButton" type="OptionButton" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer"]
+[node name="SolutionOrProjectOptionButton" type="OptionButton" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/icon_max_width = 20
 selected = 0
 fit_to_longest_item = false
 item_count = 1
 popup/item_0/text = "Solution"
+popup/item_0/icon = ExtResource("2_3q32m")
 popup/item_0/id = 0
 
 [node name="CheckButton" type="CheckButton" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/HBoxContainer"]
