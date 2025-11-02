@@ -89,10 +89,31 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Label" type="Label" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Label" type="Label" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.67058825, 0.67058825, 0.67058825, 1)
-text = "Installed Packages in Application: 4"
+text = "Installed Packages in "
+
+[node name="InstalledPackagesSlnOrProjectNameLabel" type="Label" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67058825, 0.67058825, 0.67058825, 1)
+text = "Application"
+
+[node name="Label3" type="Label" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67058825, 0.67058825, 0.67058825, 1)
+text = ": "
+
+[node name="InstalledPackagesResultCountLabel" type="Label" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.67058825, 0.67058825, 0.67058825, 1)
+text = "4"
 
 [node name="PanelContainer" type="PanelContainer" parent="VBoxContainer/MarginContainer2/HSplitContainer/VBoxContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2

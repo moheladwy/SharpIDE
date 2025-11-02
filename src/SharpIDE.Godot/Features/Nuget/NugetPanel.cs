@@ -12,6 +12,11 @@ public partial class NugetPanel : Control
     private VBoxContainer _availablePackagesItemList = null!;
     private OptionButton _solutionOrProjectOptionButton = null!;
     
+    private Label _installedPackagesSlnOrProjectNameLabel = null!;
+    private Label _installedPackagesResultCountLabel = null!;
+    private Label _implicitlyInstalledPackagesSlnOrProjectNameLabel = null!;
+    private Label _implicitlyInstalledPackagesResultCountLabel = null!;
+    
     private NugetPackageDetails _nugetPackageDetails = null!;
 
     private SharpIdeSolutionModel? _solution;
@@ -23,6 +28,8 @@ public partial class NugetPanel : Control
     private readonly Texture2D _csprojIcon = ResourceLoader.Load<Texture2D>("uid://cqt30ma6xgder");
     
     private IdePackageResult? _selectedPackage;
+    // we use this to access the project for the dropdown
+    private List<SharpIdeProjectModel?> _projects = null!;
 
     public override void _Ready()
     {
@@ -31,6 +38,10 @@ public partial class NugetPanel : Control
         _availablePackagesItemList = GetNode<VBoxContainer>("%AvailablePackagesVBoxContainer");
         _solutionOrProjectOptionButton = GetNode<OptionButton>("%SolutionOrProjectOptionButton");
         _nugetPackageDetails = GetNode<NugetPackageDetails>("%NugetPackageDetails");
+        _installedPackagesSlnOrProjectNameLabel = GetNode<Label>("%InstalledPackagesSlnOrProjectNameLabel");
+        _installedPackagesResultCountLabel = GetNode<Label>("%InstalledPackagesResultCountLabel");
+        //_implicitlyInstalledPackagesSlnOrProjectNameLabel = GetNode<Label>("%ImplicitlyInstalledPackagesSlnOrProjectNameLabel");
+        //_implicitlyInstalledPackagesResultCountLabel = GetNode<Label>("%ImplicitlyInstalledPackagesResultCountLabel");
         _nugetPackageDetails.Visible = false;
         _installedPackagesVboxContainer.QueueFreeChildren();
         _implicitlyInstalledPackagesItemList.QueueFreeChildren();
@@ -43,9 +54,10 @@ public partial class NugetPanel : Control
     {
         await _sharpIdeSolutionAccessor.SolutionReadyTcs.Task;
         _solution = _sharpIdeSolutionAccessor.SolutionModel;
+        _projects = [null!, .._solution!.AllProjects.OrderBy(s => s.Name)]; // So that index 0 is solution // Probably should use Item Metadata instead of this
         await this.InvokeAsync(() =>
         {
-            foreach (var project in _solution!.AllProjects.OrderBy(s => s.Name))
+            foreach (var project in _projects.Skip(1))
             {
                 _solutionOrProjectOptionButton.AddIconItem(_csprojIcon, project.Name);
             }
@@ -56,9 +68,11 @@ public partial class NugetPanel : Control
 
     private void OnSolutionOrProjectSelected(long index)
     {
+        var slnOrProject = (ISolutionOrProject?)_projects[(int)index] ?? _solution!;
         _ = Task.GodotRun(async () =>
         {
             if (_solution is null) throw new InvalidOperationException("Solution is null but should not be");
+            _ = Task.GodotRun(() => SetSolutionOrProjectNameLabels(slnOrProject));
             _ = Task.GodotRun(PopulateSearchResults);
             _ = Task.GodotRun(PopulateInstalledPackages);
         });
@@ -68,6 +82,20 @@ public partial class NugetPanel : Control
     {
         _selectedPackage = packageResult;
         await _nugetPackageDetails.SetPackage(packageResult);
+    }
+
+    private async Task SetSolutionOrProjectNameLabels(ISolutionOrProject slnOrProject)
+    {
+        var text = slnOrProject switch
+        {
+            SharpIdeSolutionModel => "Solution",
+            SharpIdeProjectModel projectModel => projectModel.Name,
+            _ => throw new InvalidOperationException("Unknown solution or project type")
+        };
+        await this.InvokeAsync(() =>
+        {
+            return _installedPackagesSlnOrProjectNameLabel.Text = text;
+        });
     }
 
     private async Task PopulateSearchResults()
