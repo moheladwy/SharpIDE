@@ -25,4 +25,10 @@ public partial class PackageDetailsProjectEntry : MarginContainer
         _projectNameLabel.Text = ProjectModel.Name;
         _installedVersionLabel.Text = IsTransitive ? $"({InstalledVersion?.ToNormalizedString()})" : InstalledVersion?.ToNormalizedString();
     }
+    
+    public void ClearInstallInfo()
+    {
+        _installedVersionLabel.Text = string.Empty;
+        InstalledVersion = null;
+    }
 }

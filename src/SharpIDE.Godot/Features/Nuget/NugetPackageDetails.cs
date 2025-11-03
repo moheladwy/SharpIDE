@@ -83,6 +83,10 @@ public partial class NugetPackageDetails : VBoxContainer
 		await this.InvokeAsync(() =>
 		{
 			var scenes = _projectsVBoxContainer.GetChildren().OfType<PackageDetailsProjectEntry>().ToList();
+			if (projectPackageReferences.Count is 0)
+			{
+				scenes.ForEach(s => s.ClearInstallInfo());
+			}
 			foreach (var projectPackageReference in projectPackageReferences)
 			{
 				var scene = scenes.Single(s => s.ProjectModel == projectPackageReference.Project);
