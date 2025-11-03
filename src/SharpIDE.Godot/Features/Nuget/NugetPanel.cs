@@ -29,6 +29,7 @@ public partial class NugetPanel : Control
 
 	// we use this to access the project for the dropdown
 	private List<SharpIdeProjectModel?> _projects = null!;
+	private IdePackageResult? _selectedPackageResult = null!;
 
 	public override void _Ready()
 	{
@@ -72,7 +73,6 @@ public partial class NugetPanel : Control
 		{
 			if (_solution is null) throw new InvalidOperationException("Solution is null but should not be");
 			_ = Task.GodotRun(() => SetSolutionOrProjectNameLabels(slnOrProject));
-			//_ = Task.GodotRun(() => SetDetailsProjects(slnOrProject));
 			_ = Task.GodotRun(() => PopulateInstalledPackages(slnOrProject));
 			_ = Task.GodotRun(PopulateSearchResults);
 		});
@@ -80,6 +80,7 @@ public partial class NugetPanel : Control
 
 	private async Task OnPackageSelected(IdePackageResult packageResult)
 	{
+		_selectedPackageResult = packageResult;
 		await _nugetPackageDetails.SetPackage(packageResult);
 	}
 
@@ -87,11 +88,11 @@ public partial class NugetPanel : Control
 	{
 		var projects = slnOrProject switch
 		{
-			SharpIdeSolutionModel solutionModel => _projects.Skip(1).ToHashSet(),
+			SharpIdeSolutionModel => _projects.Skip(1).ToHashSet(),
 			SharpIdeProjectModel projectModel => [projectModel],
 			_ => throw new InvalidOperationException("Unknown solution or project type")
 		};
-		//await _nugetPackageDetails.SetProjects(projects);
+		await _nugetPackageDetails.SetProjects(projects!);
 	}
 
 	private async Task SetSolutionOrProjectNameLabels(ISolutionOrProject slnOrProject)
@@ -132,6 +133,7 @@ public partial class NugetPanel : Control
 
 	private async Task PopulateInstalledPackages(ISolutionOrProject slnOrProject)
 	{
+		var setDetailsProjectsTask = SetDetailsProjects(slnOrProject);
 		var msbuildEvalTask = slnOrProject switch
 		{
 			SharpIdeSolutionModel solutionModel => (Task)Task.WhenAll(solutionModel.AllProjects.Select(s => s.MsBuildEvaluationProjectTask)),
@@ -156,6 +158,16 @@ public partial class NugetPanel : Control
 		}).ToList();
 		var transitiveScenes = scenes.Where(s => s.PackageResult.InstalledNugetPackageInfo!.IsPrimarilyTransitive).ToList();
 		var directScenes = scenes.Except(transitiveScenes).ToList();
+		await setDetailsProjectsTask;
+		if (_selectedPackageResult is not null)
+		{
+			var updatedPackageResult = idePackageResult.SingleOrDefault(p => p.PackageId.Equals(_selectedPackageResult.PackageId, StringComparison.OrdinalIgnoreCase));
+			if (updatedPackageResult is not null)
+			{
+				_selectedPackageResult = updatedPackageResult;
+				await OnPackageSelected(_selectedPackageResult);
+			}
+		}
 		await this.InvokeAsync(() =>
 		{
 			_installedPackagesVboxContainer.QueueFreeChildren();

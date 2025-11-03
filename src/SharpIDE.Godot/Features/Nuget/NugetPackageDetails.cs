@@ -44,7 +44,7 @@ public partial class NugetPackageDetails : VBoxContainer
 		});
 		var (iconBytes, iconFormat) = await iconTask;
 		var imageTexture = ImageTextureHelper.GetImageTextureFromBytes(iconBytes, iconFormat) ?? _defaultIconTextureRect;
-		await SetProjects(package.InstalledNugetPackageInfo!.ProjectPackageReferences);
+		await SetProjectPackageReferences(package.InstalledNugetPackageInfo?.ProjectPackageReferences ?? []);
 		await this.InvokeAsync(() =>
 		{
 			_packageIconTextureRect.Texture = imageTexture;
@@ -59,15 +59,13 @@ public partial class NugetPackageDetails : VBoxContainer
 			OnNugetSourceSelected(0);
 		});
 	}
-
-	public async Task SetProjects(List<ProjectPackageReference> projectPackageReferences)
+	
+	public async Task SetProjects(HashSet<SharpIdeProjectModel> projects)
 	{
-		var scenes = projectPackageReferences.Select(s =>
+		var scenes = projects.Select(s =>
 		{
 			var scene = _packageDetailsProjectEntryScene.Instantiate<PackageDetailsProjectEntry>();
-			scene.ProjectModel = s.Project;
-			scene.InstalledVersion = s.InstalledVersion;
-			scene.IsTransitive = s.IsTransitive;
+			scene.ProjectModel = s;
 			return scene;
 		}).ToList();
 		await this.InvokeAsync(() =>
@@ -76,6 +74,21 @@ public partial class NugetPackageDetails : VBoxContainer
 			foreach (var scene in scenes)
 			{
 				_projectsVBoxContainer.AddChild(scene);
+			}
+		});
+	}
+
+	public async Task SetProjectPackageReferences(List<ProjectPackageReference> projectPackageReferences)
+	{
+		await this.InvokeAsync(() =>
+		{
+			var scenes = _projectsVBoxContainer.GetChildren().OfType<PackageDetailsProjectEntry>().ToList();
+			foreach (var projectPackageReference in projectPackageReferences)
+			{
+				var scene = scenes.Single(s => s.ProjectModel == projectPackageReference.Project);
+				scene.InstalledVersion = projectPackageReference.InstalledVersion;
+				scene.IsTransitive = projectPackageReference.IsTransitive;
+				scene.SetValues();
 			}
 		});
 	}

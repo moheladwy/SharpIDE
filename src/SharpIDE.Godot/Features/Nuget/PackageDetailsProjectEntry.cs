@@ -18,8 +18,8 @@ public partial class PackageDetailsProjectEntry : MarginContainer
         _installedVersionLabel = GetNode<Label>("%InstalledVersionLabel");
         SetValues();
     }
-
-    private void SetValues()
+    
+    public void SetValues()
     {
         if (ProjectModel == null) return;
         _projectNameLabel.Text = ProjectModel.Name;
