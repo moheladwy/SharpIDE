@@ -75,12 +75,10 @@ public class DebuggingService
 		debugProtocolHost.RegisterEventType<StoppedEvent>(async void (@event) =>
 		{
 			await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding); // The VS Code Debug Protocol throws if you try to send a request from the dispatcher thread
-			//Dictionary<string, JToken>? test = @event.AdditionalProperties;
-			var prop = @event.GetType().GetProperty("AdditionalProperties", BindingFlags.NonPublic | BindingFlags.Instance);
+			var additionalProperties = @event.AdditionalProperties;
 			// source, line, column
-			var dict = prop?.GetValue(@event) as Dictionary<string, JToken>;
-			var filePath = dict?["source"]?["path"]!.Value<string>()!;
-			var line = (dict?["line"]?.Value<int>()!).Value;
+			var filePath = additionalProperties?["source"]?["path"]!.Value<string>()!;
+			var line = (additionalProperties?["line"]?.Value<int>()!).Value;
 			var executionStopInfo = new ExecutionStopInfo { FilePath = filePath, Line = line, ThreadId = @event.ThreadId!.Value };
 			GlobalEvents.Instance.DebuggerExecutionStopped.InvokeParallelFireAndForget(executionStopInfo);
 			if (@event.Reason is StoppedEvent.ReasonValue.Exception)

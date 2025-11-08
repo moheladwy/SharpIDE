@@ -18,6 +18,7 @@
     <Publicize Include="Microsoft.CodeAnalysis.Razor.SemanticTokens" />
     <Publicize Include="Microsoft.CodeAnalysis.Workspaces" />
     <Publicize Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" />
+    <Publicize Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol" IncludeCompilerGeneratedMembers="false" />
     <DoNotPublicize Include="Microsoft.CodeAnalysis.Workspaces:System.Linq.RoslynEnumerableExtensions" />
   </ItemGroup>
 
