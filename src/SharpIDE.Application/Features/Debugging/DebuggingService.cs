@@ -5,7 +5,7 @@ using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 using Newtonsoft.Json.Linq;
-using SharpIDE.Application.Features.Debugging.Experimental.VsDbg;
+using SharpIDE.Application.Features.Debugging.Signing;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.SolutionDiscovery;
 

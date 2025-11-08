@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using CliWrap;
 
-namespace SharpIDE.Application.Features.Debugging.Experimental.VsDbg;
+namespace SharpIDE.Application.Features.Debugging.Signing;
 
 public static class DebuggerHandshakeSigner
 {
