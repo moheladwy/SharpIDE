@@ -26,6 +26,14 @@ A modern, cross platform & open source IDE for .NET
 ## Debug (WIP)
 <img width="1545" height="868" alt="image" src="https://github.com/user-attachments/assets/5f20f0d8-b31a-436c-b477-57961c10f558" />
 
+## Build
+<img width="1544" height="868" alt="image" src="https://github.com/user-attachments/assets/4906de77-f3a7-4dc6-8138-6a824ae3eb61" />
+
+## NuGet (WIP)
+<img width="1651" height="1002" alt="image" src="https://github.com/user-attachments/assets/a9f9259e-f733-43ad-a99e-9a932baf6f9d" />
+
+## Test Explorer (WIP)
+<img width="1630" height="895" alt="image" src="https://github.com/user-attachments/assets/b76efd8e-6f57-42a4-b2dc-8fd3e907db83" />
 
 ### Building
 if using a preview .NET SDK, ensure that `DOTNET_ROLL_FORWARD_TO_PRERELEASE` is set to `1` as per https://github.com/godotengine/godot/issues/98334, otherwise it will blow up.
