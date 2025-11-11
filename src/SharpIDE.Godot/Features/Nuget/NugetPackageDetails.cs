@@ -11,6 +11,7 @@ public partial class NugetPackageDetails : VBoxContainer
 {
 	private TextureRect _packageIconTextureRect = null!;
 	private Label _packageNameLabel = null!;
+	private FoldableContainer _infoFoldableContainer = null!;
 	private OptionButton _versionOptionButton = null!;
 	private OptionButton _nugetSourceOptionButton = null!;
 	private VBoxContainer _projectsVBoxContainer = null!;
@@ -27,6 +28,7 @@ public partial class NugetPackageDetails : VBoxContainer
 	{
 		_packageIconTextureRect = GetNode<TextureRect>("%PackageIconTextureRect");
 		_packageNameLabel = GetNode<Label>("%PackageNameLabel");
+		_infoFoldableContainer = GetNode<FoldableContainer>("%InfoFoldableContainer");
 		_versionOptionButton = GetNode<OptionButton>("%VersionOptionButton");
 		_nugetSourceOptionButton = GetNode<OptionButton>("%NugetSourceOptionButton");
 		_projectsVBoxContainer = GetNode<VBoxContainer>("%ProjectsVBoxContainer");
@@ -112,10 +114,11 @@ public partial class NugetPackageDetails : VBoxContainer
 	
 	private async void OnNugetSourceSelected(long sourceIndex)
 	{
-		var source = _package!.PackageFromSources[(int)sourceIndex];
-		var results = await _nugetClientService.GetAllVersionsOfPackageInSource(source.PackageSearchMetadata.Identity.Id, source.Source);
+		var packageFromSource = _package!.PackageFromSources[(int)sourceIndex];
+		var results = await _nugetClientService.GetAllVersionsOfPackageInSource(packageFromSource.PackageSearchMetadata.Identity.Id, packageFromSource.Source);
 		await this.InvokeAsync(() =>
 		{
+			_infoFoldableContainer.Title = packageFromSource.PackageSearchMetadata.Description;
 			_versionOptionButton.Clear();
 			foreach (var (index, metadata) in results.Index())
 			{
