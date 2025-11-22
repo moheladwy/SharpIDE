@@ -975,23 +975,21 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		await _solutionLoadedTcs.Task;
 		Guard.Against.Null(fileModel, nameof(fileModel));
 
-		var project = GetProjectForSharpIdeFile(fileModel);
-
-		var document = fileModel switch
+		var documentId = _workspace!.CurrentSolution.GetDocumentIdsWithFilePath(fileModel.Path).Single();
+		var documentKind = _workspace.CurrentSolution.GetDocumentKind(documentId);
+		if (documentKind is null)
 		{
-			{ IsRazorFile: true } => project.AdditionalDocuments.Single(s => s.FilePath == fileModel.Path),
-			{ IsCsharpFile: true } => project.Documents.Single(s => s.FilePath == fileModel.Path),
-			_ => throw new InvalidOperationException("UpdateDocument failed: File is not in workspace")
-		};
+			_logger.LogError("Attempted to remove document not in workspace: '{DocumentPath}'", fileModel.Path);
+			return;
+		}
 
-		var newSolution = fileModel switch
+		switch (documentKind)
 		{
-			{ IsRazorFile: true } => _workspace.CurrentSolution.RemoveAdditionalDocument(document.Id),
-			{ IsCsharpFile: true } => _workspace.CurrentSolution.RemoveDocument(document.Id),
-			_ => throw new InvalidOperationException("AddDocument failed: File is not in workspace")
-		};
-
-		_workspace.TryApplyChanges(newSolution);
+			case TextDocumentKind.Document: _workspace.OnDocumentRemoved(documentId); break;
+			case TextDocumentKind.AdditionalDocument: _workspace.OnAdditionalDocumentRemoved(documentId); break;
+			case TextDocumentKind.AnalyzerConfigDocument: _workspace.OnAnalyzerConfigDocumentRemoved(documentId); break;
+			default: throw new ArgumentOutOfRangeException(nameof(documentKind));
+		}
 	}
 
 	public async Task MoveDocument(SharpIdeFile sharpIdeFile, string oldFilePath)
