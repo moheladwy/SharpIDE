@@ -983,6 +983,9 @@ public class RoslynAnalysis(ILogger<RoslynAnalysis> logger, BuildService buildSe
 		{
 			return false;
 		}
+		
+		// This may not be perfect, as None Include="" seems to be returned here as one of the globs as Include, with no distinction of Compile vs None etc
+		// TODO: Investigate getting the glob type (Compile, None, etc)
 		var matchers = projectFileInfo.FileGlobs.Select(glob =>
 		{
 			var matcher = new Matcher();
