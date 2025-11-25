@@ -14,6 +14,7 @@ using R3;
 using Roslyn.Utilities;
 using SharpIDE.Application;
 using SharpIDE.Application.Features.Analysis;
+using SharpIDE.Application.Features.Analysis.Razor;
 using SharpIDE.Application.Features.Debugging;
 using SharpIDE.Application.Features.Events;
 using SharpIDE.Application.Features.FilePersistence;
@@ -24,7 +25,6 @@ using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
 using SharpIDE.Godot.Features.Problems;
 using SharpIDE.Godot.Features.SymbolLookup;
-using SharpIDE.RazorAccess;
 using Task = System.Threading.Tasks.Task;
 
 namespace SharpIDE.Godot.Features.CodeEditor;

@@ -2,7 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.Extensions.Internal;
 
-namespace SharpIDE.RazorAccess;
+namespace SharpIDE.Application.Features.Analysis.Razor;
 
 public sealed class SharpIdeRazorSourceMapping(
 	SharpIdeRazorSourceSpan originalSpan,

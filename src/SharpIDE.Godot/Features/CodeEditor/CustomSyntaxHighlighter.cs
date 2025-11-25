@@ -4,8 +4,8 @@ using Godot.Collections;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
 using SharpIDE.Application.Features.Analysis;
+using SharpIDE.Application.Features.Analysis.Razor;
 using SharpIDE.Godot.Features.CodeEditor;
-using SharpIDE.RazorAccess;
 
 namespace SharpIDE.Godot;
 

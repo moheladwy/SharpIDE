@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Internal;
 
-namespace SharpIDE.RazorAccess;
+namespace SharpIDE.Application.Features.Analysis.Razor;
 
 public readonly struct SharpIdeRazorSourceSpan(
 	string filePath,

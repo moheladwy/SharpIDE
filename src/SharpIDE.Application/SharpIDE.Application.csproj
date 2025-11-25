@@ -63,10 +63,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpIDE.RazorAccess\SharpIDE.RazorAccess.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
   </ItemGroup>
 </Project>

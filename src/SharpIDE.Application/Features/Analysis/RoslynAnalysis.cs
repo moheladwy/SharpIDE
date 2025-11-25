@@ -32,7 +32,6 @@ using SharpIDE.Application.Features.Analysis.Razor;
 using SharpIDE.Application.Features.Build;
 using SharpIDE.Application.Features.SolutionDiscovery;
 using SharpIDE.Application.Features.SolutionDiscovery.VsPersistence;
-using SharpIDE.RazorAccess;
 using CodeAction = Microsoft.CodeAnalysis.CodeActions.CodeAction;
 using CompletionItem = Microsoft.CodeAnalysis.Completion.CompletionItem;
 using CompletionList = Microsoft.CodeAnalysis.Completion.CompletionList;
