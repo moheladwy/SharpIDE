@@ -119,14 +119,14 @@ public partial class ProblemsPanel : Control
         }
         
         // Get font and prepare text
-        var font = _tree.GetThemeFont("font");
-        var fontSize = _tree.GetThemeFontSize("font_size");
+        var font = _tree.GetThemeFont(ThemeStringNames.Font);
+        var fontSize = _tree.GetThemeFontSize(ThemeStringNames.FontSize);
         var textColor = (isSelected, hovered) switch
         {
-            (true, true) => _tree.GetThemeColor("font_hovered_selected_color"),
-            (true, false) => _tree.GetThemeColor("font_selected_color"),
-            (false, true) => _tree.GetThemeColor("font_hovered_color"),
-            (false, false) => _tree.GetThemeColor("font_color")
+            (true, true) => _tree.GetThemeColor(ThemeStringNames.FontHoveredSelectedColor),
+            (true, false) => _tree.GetThemeColor(ThemeStringNames.FontSelectedColor),
+            (false, true) => _tree.GetThemeColor(ThemeStringNames.FontHoveredColor),
+            (false, false) => _tree.GetThemeColor(ThemeStringNames.FontColor)
         };
         var textYPos = currentY + (rect.Size.Y + fontSize) / 2 - 2;
         
