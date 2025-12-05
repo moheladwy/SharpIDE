@@ -48,7 +48,7 @@ public partial class ProblemsPanel : Control
     public void BindToTree(ObservableHashSet<SharpIdeProjectModel> list)
     {
         var view = list.CreateView(y => new TreeItemContainer());
-        view.ObserveChanged()
+        view.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
             .SubscribeAwait(async (e, ct) => await (e.Action switch
             {
                 NotifyCollectionChangedAction.Add => CreateProjectTreeItem(_tree, _rootItem, e),
@@ -70,7 +70,7 @@ public partial class ProblemsPanel : Control
             Observable.EveryValueChanged(e.NewItem.Value, s => s.Diagnostics.Count).Subscribe(s => treeItem.Visible = s is not 0).AddTo(this);
             
             var projectDiagnosticsView = e.NewItem.Value.Diagnostics.CreateView(y => new TreeItemContainer());
-            projectDiagnosticsView.ObserveChanged()
+            projectDiagnosticsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
                 .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
                 {
                     NotifyCollectionChangedAction.Add => CreateDiagnosticTreeItem(_tree, treeItem, innerEvent),

@@ -104,7 +104,7 @@ public partial class CodeEditorPanel : MarginContainer
             _tabContainer.SetTabTooltip(newTabIndex, file.Path);
             _tabContainer.CurrentTab = newTabIndex;
             
-            file.IsDirty.Skip(1).SubscribeOnThreadPool().SubscribeAwait(async (isDirty, ct) =>
+            file.IsDirty.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (isDirty, ct) =>
             {
                 //GD.Print($"File dirty state changed: {file.Path} is now {(isDirty ? "dirty" : "clean")}");
                 await this.InvokeAsync(() =>

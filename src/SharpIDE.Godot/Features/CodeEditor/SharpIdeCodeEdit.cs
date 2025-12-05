@@ -278,7 +278,7 @@ public partial class SharpIdeCodeEdit : CodeEdit
 		var project = ((IChildSharpIdeNode)_currentFile).GetNearestProjectNode();
 		if (project is not null)
 		{
-			_projectDiagnosticsObserveDisposable = project.Diagnostics.ObserveChanged()
+			_projectDiagnosticsObserveDisposable = project.Diagnostics.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 				.SubscribeAwait(async (innerEvent, ct) =>
 				{
 					var projectDiagnosticsForFile = project.Diagnostics.Where(s => s.FilePath == _currentFile.Path).ToImmutableArray();

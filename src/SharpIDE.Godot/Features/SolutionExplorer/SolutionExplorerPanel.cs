@@ -141,7 +141,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	    var projectsView = solution.Projects.CreateView(y => new TreeItemContainer());
 		projectsView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateProjectTreeItem(_tree, rootItem, s.Value));
 	        
-	    projectsView.ObserveChanged()
+	    projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	        .SubscribeAwait(async (e, ct) => await (e.Action switch
 	        {
 			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value)),
@@ -152,7 +152,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	    // Observe Solution Folders
 	    var foldersView = solution.SlnFolders.CreateView(y => new TreeItemContainer());
 	    foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateSlnFolderTreeItem(_tree, rootItem, s.Value));
-	    foldersView.ObserveChanged()
+	    foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	        .SubscribeAwait(async (e, ct) => await (e.Action switch
 	        {
 	            NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, _rootItem, e.NewItem.Value)),
@@ -176,7 +176,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	        var subFoldersView = slnFolder.Folders.CreateView(y => new TreeItemContainer());
 	        subFoldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, s.Value));
 	        
-	        subFoldersView.ObserveChanged()
+	        subFoldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 	            {
 	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
@@ -186,7 +186,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 
 	        var projectsView = slnFolder.Projects.CreateView(y => new TreeItemContainer());
 	        projectsView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateProjectTreeItem(_tree, folderItem, s.Value));
-	        projectsView.ObserveChanged()
+	        projectsView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 	            {
 	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
@@ -196,7 +196,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 
 	        var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
 	        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
-	        filesView.ObserveChanged()
+	        filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 	            .SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 	            {
 	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
@@ -218,7 +218,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 		var foldersView = projectModel.Folders.CreateView(y => new TreeItemContainer());
 		foldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, projectItem, s.Value));
 		
-		foldersView.ObserveChanged()
+		foldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 			{
 				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFolderTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
@@ -230,7 +230,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 		// Observe project files
 		var filesView = projectModel.Files.CreateView(y => new TreeItemContainer());
 		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, projectItem, s.Value));
-		filesView.ObserveChanged()
+		filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 			{
 				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, projectItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
@@ -259,7 +259,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 		var subFoldersView = sharpIdeFolder.Folders.CreateView(y => new TreeItemContainer());
 		subFoldersView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFolderTreeItem(_tree, folderItem, s.Value));
 		
-		subFoldersView.ObserveChanged()
+		subFoldersView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 			{
 				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFolderTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
@@ -271,7 +271,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 		// Observe files
 		var filesView = sharpIdeFolder.Files.CreateView(y => new TreeItemContainer());
 		filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
-		filesView.ObserveChanged()
+		filesView.ObserveChanged().SubscribeOnThreadPool().ObserveOnThreadPool()
 			.SubscribeAwait(async (innerEvent, ct) => await (innerEvent.Action switch
 			{
 				NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
