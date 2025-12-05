@@ -133,6 +133,7 @@ public partial class NugetPanel : Control
 	private async Task PopulateSearchResults()
 	{
 		return;
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(NugetPanel)}.{nameof(PopulateSearchResults)}");
 		var result = await _nugetClientService.GetTop100Results(_solution!.DirectoryPath);
 		var scenes = result.Select(s =>
 		{
@@ -216,6 +217,10 @@ public partial class NugetPanel : Control
 				_installedPackagesProgressBar.Visible = isOccurring;
 				_implicitlyInstalledPackagesProgressBar.Visible = isOccurring;
 			});
+		}
+		else if (activity.DisplayName == $"{nameof(NugetPanel)}.{nameof(PopulateSearchResults)}")
+		{
+			await this.InvokeAsync(() => _packageSearchProgressBar.Visible = isOccurring);
 		}
 	}
 }
