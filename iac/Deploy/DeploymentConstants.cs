@@ -2,5 +2,5 @@ namespace Deploy;
 
 public static class DeploymentConstants
 {
-	public const string SolutionFileName = "SharpIDE.sln";
+	public const string SolutionFileName = "SharpIDE.slnx";
 }
