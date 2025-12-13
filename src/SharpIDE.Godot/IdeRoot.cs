@@ -157,7 +157,7 @@ public partial class IdeRoot : Control
 			_fileExternalChangeHandler.SolutionModel = solutionModel;
 			_fileChangedService.SolutionModel = solutionModel;
 			_sharpIdeSolutionModificationService.SolutionModel = solutionModel;
-			Callable.From(_solutionExplorerPanel.BindToSolution).CallDeferred();
+			_ = Task.GodotRun(_solutionExplorerPanel.BindToSolution);
 			_roslynAnalysis.StartLoadingSolutionInWorkspace(solutionModel);
 			_fileWatcher.StartWatching(solutionModel);
 			

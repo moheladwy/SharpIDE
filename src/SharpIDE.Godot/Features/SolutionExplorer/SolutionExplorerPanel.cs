@@ -3,6 +3,7 @@ using Ardalis.GuardClauses;
 using Godot;
 using ObservableCollections;
 using R3;
+using SharpIDE.Application;
 using SharpIDE.Application.Features.Analysis;
 using SharpIDE.Application.Features.NavigationHistory;
 using SharpIDE.Application.Features.SolutionDiscovery;
@@ -27,6 +28,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	public Texture2D SlnIcon { get; set; } = null!;
 	
 	public SharpIdeSolutionModel SolutionModel { get; set; } = null!;
+	private PanelContainer _panelContainer = null!;
 	private Tree _tree = null!;
 	private TreeItem _rootItem = null!;
 
@@ -35,8 +37,11 @@ public partial class SolutionExplorerPanel : MarginContainer
 	private (List<IFileOrFolder>, ClipboardOperation)? _itemsOnClipboard;
 	public override void _Ready()
 	{
-		_tree = GetNode<Tree>("Tree");
+		_panelContainer = GetNode<PanelContainer>("PanelContainer");
+		_tree = GetNode<Tree>("%Tree");
 		_tree.ItemMouseSelected += TreeOnItemMouseSelected;
+		// Remove the tree from the scene tree for now, we will add it back when we bind to a solution
+		_panelContainer.RemoveChild(_tree);
 		GodotGlobalEvents.Instance.FileExternallySelected.Subscribe(OnFileExternallySelected);
 	}
 
@@ -125,11 +130,16 @@ public partial class SolutionExplorerPanel : MarginContainer
 		return null;
 	}
 
-	public void BindToSolution() => BindToSolution(SolutionModel);
+	public async Task BindToSolution() => await BindToSolution(SolutionModel);
 	[RequiresGodotUiThread]
-	public void BindToSolution(SharpIdeSolutionModel solution)
+	public async Task BindToSolution(SharpIdeSolutionModel solution)
 	{
-	    _tree.Clear();
+		await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+		using var _ = SharpIdeOtel.Source.StartActivity($"{nameof(SolutionExplorerPanel)}.{nameof(BindToSolution)}");
+		
+		// Solutions with hundreds of thousands of files can cause the ui to freeze as the tree is populated
+		// the Tree has been removed from the scene tree in _Ready, so we can operate on it off the ui thread, then add it back
+		_tree.Clear();
 
 	    // Root
 	    var rootItem = _tree.CreateItem();
@@ -147,7 +157,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 			    NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateProjectTreeItem(_tree, _rootItem, e.NewItem.Value)),
 	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
 	            _ => Task.CompletedTask
-	        })).AddTo(this);
+	        })).AddToDeferred(this);
 
 	    // Observe Solution Folders
 	    var foldersView = solution.SlnFolders.CreateView(y => new TreeItemContainer());
@@ -158,10 +168,14 @@ public partial class SolutionExplorerPanel : MarginContainer
 	            NotifyCollectionChangedAction.Add => this.InvokeAsync(() => e.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, _rootItem, e.NewItem.Value)),
 	            NotifyCollectionChangedAction.Remove => FreeTreeItem(e.OldItem.View.Value),
 	            _ => Task.CompletedTask
-	        })).AddTo(this);
+	        })).AddToDeferred(this);
 	    
 	    rootItem.SetCollapsedRecursive(true);
 	    rootItem.Collapsed = false;
+	    await this.InvokeAsync(() =>
+	    {
+		    _panelContainer.AddChild(_tree);
+	    });
 	}
 
 	[RequiresGodotUiThread]
@@ -182,7 +196,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateSlnFolderTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
 	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 	                _ => Task.CompletedTask
-	            })).AddTo(this);
+	            })).AddToDeferred(this);
 
 	        var projectsView = slnFolder.Projects.CreateView(y => new TreeItemContainer());
 	        projectsView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateProjectTreeItem(_tree, folderItem, s.Value));
@@ -192,7 +206,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateProjectTreeItem(_tree, folderItem, innerEvent.NewItem.Value)),
 	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 	                _ => Task.CompletedTask
-	            })).AddTo(this);
+	            })).AddToDeferred(this);
 
 	        var filesView = slnFolder.Files.CreateView(y => new TreeItemContainer());
 	        filesView.Unfiltered.ToList().ForEach(s => s.View.Value = CreateFileTreeItem(_tree, folderItem, s.Value));
@@ -202,7 +216,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 	                NotifyCollectionChangedAction.Add => this.InvokeAsync(() => innerEvent.NewItem.View.Value = CreateFileTreeItem(_tree, folderItem, innerEvent.NewItem.Value, innerEvent.NewStartingIndex)),
 	                NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 	                _ => Task.CompletedTask
-	            })).AddTo(this);
+	            })).AddToDeferred(this);
 	        return folderItem;
 	}
 
@@ -225,7 +239,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			})).AddTo(this);
+			})).AddToDeferred(this);
 
 		// Observe project files
 		var filesView = projectModel.Files.CreateView(y => new TreeItemContainer());
@@ -237,7 +251,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			})).AddTo(this);
+			})).AddToDeferred(this);
 		return projectItem;
 	}
 
@@ -253,7 +267,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 			.Skip(1).SubscribeOnThreadPool().ObserveOnThreadPool().SubscribeAwait(async (s, ct) =>
 			{
 				await this.InvokeAsync(() => folderItem.SetText(0, s));
-			}).AddTo(this);
+			}).AddToDeferred(this);
 		
 		// Observe subfolders
 		var subFoldersView = sharpIdeFolder.Folders.CreateView(y => new TreeItemContainer());
@@ -266,7 +280,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			})).AddTo(this);
+			})).AddToDeferred(this);
 
 		// Observe files
 		var filesView = sharpIdeFolder.Files.CreateView(y => new TreeItemContainer());
@@ -278,7 +292,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 				NotifyCollectionChangedAction.Move => MoveTreeItem(_tree, innerEvent.NewItem.View, innerEvent.NewItem.Value, innerEvent.OldStartingIndex, innerEvent.NewStartingIndex),
 				NotifyCollectionChangedAction.Remove => FreeTreeItem(innerEvent.OldItem.View.Value),
 				_ => Task.CompletedTask
-			})).AddTo(this);
+			})).AddToDeferred(this);
 		return folderItem;
 	}
 
@@ -308,7 +322,7 @@ public partial class SolutionExplorerPanel : MarginContainer
 					fileItem.SetText(0, s);
 					fileItem.SetIconsForFileExtension(sharpIdeFile);
 				});
-			}).AddTo(this);
+			}).AddToDeferred(this);
 		
 		return fileItem;
 	}
