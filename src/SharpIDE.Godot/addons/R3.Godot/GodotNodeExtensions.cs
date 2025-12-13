@@ -29,4 +29,23 @@ public static class GodotNodeExtensions
         node.TreeExited += () => disposable.Dispose();
         return disposable;
     }
+    
+    public static void AddToDeferred<T>(this T disposable, Node node) where T : IDisposable
+    {
+        Callable.From(() =>
+        {
+            // Note: Dispose when tree exited, so if node is not inside tree, dispose immediately.
+            if (!node.IsInsideTree())
+            {
+                if (!node.IsNodeReady()) // Before enter tree
+                {
+                    GD.PrintErr("AddTo does not support to use before enter tree.");
+                }
+
+                disposable.Dispose();
+            }
+
+            node.TreeExited += () => disposable.Dispose();
+        }).CallDeferred();
+    }
 }
